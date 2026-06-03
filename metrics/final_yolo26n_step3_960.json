@@ -1,0 +1,172 @@
+{
+  "model": "YOLO26n Step 3 960",
+  "weights_pt": "models/downloads/YOLO26n_step3_960_best.pt",
+  "weights_onnx": "models/downloads/YOLO26n_step3_960_best.onnx",
+  "weights_onnx_800_from960": "models/downloads/YOLO26n_step3_800_from960_best.onnx",
+  "weights_onnx_800_int8_dynamic": "models/downloads/YOLO26n_step3_800_from960_int8.onnx",
+  "dataset": "dataset_step3_tiny_person_crops",
+  "validation": {
+    "precision": 0.797,
+    "recall": 0.677,
+    "mAP50": 0.765,
+    "mAP50_95": 0.545
+  },
+  "test": {
+    "precision": 0.815,
+    "recall": 0.710,
+    "mAP50": 0.792,
+    "mAP50_95": 0.579
+  },
+  "test_per_class": {
+    "bus": {
+      "precision": 0.875,
+      "recall": 0.613,
+      "mAP50": 0.739,
+      "mAP50_95": 0.623
+    },
+    "car": {
+      "precision": 0.871,
+      "recall": 0.869,
+      "mAP50": 0.931,
+      "mAP50_95": 0.707
+    },
+    "emergency_vehicle": {
+      "precision": 0.784,
+      "recall": 0.905,
+      "mAP50": 0.926,
+      "mAP50_95": 0.729
+    },
+    "motorcycle": {
+      "precision": 0.787,
+      "recall": 0.881,
+      "mAP50": 0.915,
+      "mAP50_95": 0.583
+    },
+    "person": {
+      "precision": 0.797,
+      "recall": 0.353,
+      "mAP50": 0.512,
+      "mAP50_95": 0.257
+    },
+    "truck": {
+      "precision": 0.776,
+      "recall": 0.642,
+      "mAP50": 0.731,
+      "mAP50_95": 0.577
+    }
+  },
+  "comparison_step3_800": {
+    "test_mAP50": 0.775,
+    "test_mAP50_95": 0.563,
+    "person_recall": 0.291,
+    "person_mAP50": 0.450
+  },
+  "deployment_benchmark": {
+    "raspberry_pi_family": "YOLO26n nano FP32",
+    "fps": 7.6,
+    "latency_ms": 131,
+    "step3_960_fps": 2.16,
+    "step3_960_latency_ms": 463,
+    "step3_960_frames": 300,
+    "step3_960_imgsz": 960,
+    "step3_960_conf": 0.35,
+    "step3_960_person_roi": true,
+    "step3_960_vehicle_roi": true,
+    "step3_960_dashboard": false,
+    "step3_960_anonymized_detections": 2031,
+    "step3_960_tracks_total": 585,
+    "step3_960_variants": {
+      "full_roi": {
+        "fps": 2.16,
+        "latency_ms": 463,
+        "person_roi": true,
+        "person_roi_every": 5,
+        "vehicle_roi": true,
+        "anonymized_detections": 2031,
+        "tracks_total": 585
+      },
+      "person_roi_every_10": {
+        "fps": 2.48,
+        "latency_ms": 403,
+        "person_roi": true,
+        "person_roi_every": 10,
+        "vehicle_roi": false,
+        "anonymized_detections": 1438,
+        "tracks_total": 311
+      },
+      "no_roi": {
+        "fps": 2.51,
+        "latency_ms": 398,
+        "person_roi": false,
+        "vehicle_roi": false,
+        "anonymized_detections": 875,
+        "tracks_total": 190
+      }
+    },
+    "step3_800_from960_fps": 3.94,
+    "step3_800_from960_latency_ms": 254,
+    "step3_800_from960_frames": 300,
+    "step3_800_from960_imgsz": 800,
+    "step3_800_from960_conf": 0.35,
+    "step3_800_from960_dashboard": false,
+    "step3_800_from960_variants": {
+      "no_roi": {
+        "fps": 3.94,
+        "latency_ms": 254,
+        "person_roi": false,
+        "vehicle_roi": false,
+        "anonymized_detections": 1022,
+        "tracks_total": 199
+      },
+      "person_roi_every_10": {
+        "fps": 3.45,
+        "latency_ms": 290,
+        "person_roi": true,
+        "person_roi_every": 10,
+        "vehicle_roi": false,
+        "anonymized_detections": 1440,
+        "tracks_total": 290
+      },
+      "no_roi_vid_stride_2": {
+        "fps": 4.28,
+        "effective_source_fps": 7.84,
+        "latency_ms": 234,
+        "source_frames": 300,
+        "processed_frames": 150,
+        "vid_stride": 2,
+        "person_roi": false,
+        "vehicle_roi": false,
+        "anonymized_detections": 541,
+        "tracks_total": 132
+      }
+    },
+    "step3_800_int8_dynamic_variants": {
+      "no_roi": {
+        "fps": 2.06,
+        "latency_ms": 485,
+        "source_frames": 300,
+        "processed_frames": 300,
+        "vid_stride": 1,
+        "person_roi": false,
+        "vehicle_roi": false,
+        "anonymized_detections": 1140,
+        "tracks_total": 210
+      },
+      "no_roi_vid_stride_2": {
+        "fps": 1.97,
+        "effective_source_fps": 3.76,
+        "latency_ms": 508,
+        "source_frames": 300,
+        "processed_frames": 150,
+        "vid_stride": 2,
+        "person_roi": false,
+        "vehicle_roi": false,
+        "anonymized_detections": 617,
+        "tracks_total": 138
+      }
+    },
+    "step3_960_fps_status": "confirmed_analysis_mode",
+    "step3_800_from960_fps_status": "best_pi5_tradeoff_with_stride",
+    "step3_800_int8_dynamic_status": "tested_not_retained_on_pi5_cpu"
+  }
+}

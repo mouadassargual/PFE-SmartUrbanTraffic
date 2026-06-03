@@ -1,0 +1,252 @@
+% ============================================================
+% 03_abstract.tex — Résumés
+% ============================================================
+
+% ── RÉSUMÉ EN FRANÇAIS ───────────────────────────────────────
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+{\Large\bfseries\color{PrimaryBlue} Résumé}
+\end{center}
+\vspace{0.3cm}
+\rule{\linewidth}{0.4pt}
+\vspace{0.3cm}
+
+{\normalsize
+Face à la croissance rapide des agglomérations urbaines
+marocaines et aux défis croissants de la congestion routière,
+ce mémoire présente la conception et le déploiement d'un
+système intelligent de gestion adaptative des feux de
+circulation pour les villes intelligentes, en intégrant
+des contraintes strictes de protection des données
+personnelles conformément à la Loi 09-08.
+
+Le système proposé repose sur un pipeline complet déployé
+sur Raspberry Pi 5 — un dispositif embarqué à ressources
+limitées — et s'articule autour de six modules interconnectés :
+acquisition vidéo via OpenCV, détection multi-classes par
+YOLO26n optimisé au format ONNX FP32, anonymisation temps réel
+par floutage gaussien selon le principe Privacy-by-Design,
+suivi des objets par tracker IoU sur zones polygonales,
+décision adaptative des phases de feux via un Processus
+de Décision Markovien (MDP) à politique déterministe,
+et visualisation par un tableau de bord Flask en temps réel.
+
+Un dataset hybride de \textbf{6 761 images} a été constitué
+en trois étapes méthodologiques rigoureuses — split sans
+fuite de données, renforcement de la classe \textit{person}
+via CityPersons, et génération de crops pour les petits
+piétons — à partir de sources internationales dont le
+\textbf{Bellevue Traffic Video Dataset} et de données
+locales collectées à \textbf{Lqliaa, Agadir}.
+Un benchmark de six architectures YOLO (nano et small)
+sur GPU et sur Raspberry Pi 5 confirme que \textbf{YOLO26n
+FP32} atteint \textbf{7,6 FPS réels} sur Pi 5 — meilleur
+compromis vitesse/taille parmi les douze configurations
+testées. Les variantes small sont empiriquement confirmées
+incompatibles avec le temps réel (moins de 3 FPS).
+Le modèle final \textbf{YOLO26n Step 3 960} atteint
+\textbf{0,792 mAP50} et \textbf{0,579 mAP50-95}
+sur le split test.
+
+La politique MDP a été validée sur cinq scénarios
+représentatifs couvrant trafic dense Nord-Sud,
+trafic Est-Ouest, urgence, piétons et absence de
+trafic. Dans chaque cas, la phase produite correspond
+à la phase attendue.
+Les cinq hypothèses de recherche sont confirmées,
+démontrant la viabilité d'un pipeline complet
+d'intelligence artificielle embarquée pour la gestion
+intelligente du trafic urbain, ouvrant la voie à des
+déploiements réels dans les smart cities marocaines.
+}
+
+\vspace{0.4cm}
+
+\begin{tcolorbox}[
+  colback  = LightGray,
+  colframe = DarkGray,
+  arc      = 3pt,
+  boxrule  = 0.5pt
+]
+\textbf{Mots-clés :} Edge AI, YOLO26n, Raspberry Pi 5,
+Gestion du trafic, Smart City, Privacy-by-Design,
+Anonymisation, ONNX FP32, Processus de Décision Markovien,
+Loi 09-08, Bellevue Traffic Dataset.
+\end{tcolorbox}
+
+% ── ABSTRACT EN ANGLAIS ──────────────────────────────────────
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+{\Large\bfseries\color{PrimaryBlue} Abstract}
+\end{center}
+\vspace{0.3cm}
+\rule{\linewidth}{0.4pt}
+\vspace{0.3cm}
+
+{\normalsize
+In response to the rapid growth of Moroccan urban areas and
+the increasing challenges of road congestion, this thesis
+presents the design and deployment of an intelligent adaptive
+traffic light management system for smart cities, integrating
+strict personal data protection constraints in compliance
+with Law 09-08.
+
+The proposed system relies on a complete pipeline deployed
+on a Raspberry Pi 5 — a resource-constrained embedded device
+— structured around six interconnected modules: video
+acquisition via OpenCV, multi-class detection using YOLO26n
+in ONNX FP32 format, real-time anonymization through
+Gaussian blurring following the Privacy-by-Design principle,
+IoU-based object tracking over calibrated polygonal zones,
+adaptive traffic phase decision-making via a deterministic
+Markov Decision Process (MDP), and real-time visualization
+through a Flask dashboard.
+
+A hybrid dataset of \textbf{6,761 images} was built in
+three methodological steps — leak-free group-based split,
+person class reinforcement via CityPersons, and tiny
+person crop generation — combining the
+\textbf{Bellevue Traffic Video Dataset} with local data
+collected in \textbf{Lqliaa, Agadir}.
+A comprehensive benchmark of six YOLO architectures
+(nano and small variants) on both GPU and Raspberry Pi 5
+empirically confirms that \textbf{YOLO26n FP32} achieves
+\textbf{7.6 real FPS} on Pi 5 — the best speed/size
+trade-off among the twelve tested configurations.
+Small variants are empirically confirmed incompatible
+with real-time processing (below 3 FPS on Pi 5).
+The final \textbf{YOLO26n Step 3 960} model reaches
+\textbf{0.792 mAP50} and \textbf{0.579 mAP50-95}
+on the test split.
+
+The MDP policy was validated on five representative
+scenarios covering dense North-South traffic,
+East-West traffic, emergency priority, pedestrian
+priority, and no-traffic conditions. In every case,
+the produced phase matches the expected phase.
+All five research hypotheses are confirmed, demonstrating
+the viability of a complete embedded AI pipeline for
+intelligent urban traffic management, paving the way
+for real deployments in Moroccan smart cities.
+}
+
+\vspace{0.4cm}
+
+\begin{tcolorbox}[
+  colback  = LightGray,
+  colframe = DarkGray,
+  arc      = 3pt,
+  boxrule  = 0.5pt
+]
+\textbf{Keywords:} Edge AI, YOLO26n, Raspberry Pi 5,
+Traffic Management, Smart City, Privacy-by-Design,
+Anonymization, ONNX FP32, Markov Decision Process,
+Law 09-08, Bellevue Traffic Dataset.
+\end{tcolorbox}
+
+% ── RÉSUMÉ EN ARABE ──────────────────────────────────────────
+\ifPDFTeX
+\newpage
+\thispagestyle{empty}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.94\textheight,keepaspectratio]
+  {generated/abstract_ar}
+\end{center}
+\else
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+{\Large\bfseries\color{PrimaryBlue}
+\textarabic{ملخص}}
+\end{center}
+\vspace{0.3cm}
+\rule{\linewidth}{0.4pt}
+\vspace{0.3cm}
+
+\begin{Arabic}
+
+في ظل النمو المتسارع للتجمعات الحضرية المغربية
+والتحديات المتزايدة لازدحام حركة المرور،
+يقدم هذا البحث تصميم ونشر نظام ذكي
+لإدارة إشارات المرور بشكل تكيفي في المدن الذكية،
+مع دمج متطلبات صارمة لحماية البيانات الشخصية
+وفقاً للقانون \LR{09-08}.
+
+يعتمد النظام المقترح على خط معالجة متكامل
+منشور على \LR{Raspberry Pi 5}،
+ويتمحور حول ستة وحدات مترابطة:
+استحواذ الفيديو عبر \LR{OpenCV}،
+والكشف متعدد الفئات باستخدام \LR{YOLO26n}
+بتنسيق \LR{ONNX FP32}،
+وإخفاء الهوية في الوقت الفعلي
+عبر التمويه الغاوسي وفق مبدأ
+\LR{Privacy-by-Design}،
+وتتبع الكائنات بواسطة خوارزمية \LR{IoU}
+على مناطق متعددة الأضلاع،
+واتخاذ قرار تكيفي لمراحل إشارات المرور
+عبر عملية قرار ماركوف \LR{(MDP)}،
+والتصور عبر لوحة تحكم \LR{Flask}.
+
+تم بناء مجموعة بيانات هجينة من
+\textbf{\LR{6\,761} صورة}
+في ثلاث مراحل منهجية صارمة،
+من مصادر دولية أبرزها
+\LR{Bellevue Traffic Video Dataset}
+ومن بيانات محلية جُمعت في
+\textbf{لقليعة، أكادير}.
+أثبت بنشمارك شامل لست معماريات \LR{YOLO}
+على \LR{Raspberry Pi 5}
+أن \LR{YOLO26n FP32} يحقق
+\textbf{\LR{7.6} إطار في الثانية}،
+أفضل توازن بين السرعة والحجم
+من بين اثنتي عشرة تكويناً مختبراً.
+كما حقق النموذج النهائي
+\LR{YOLO26n Step 3 960}
+\textbf{\LR{0.792 mAP50}}
+على مجموعة الاختبار.
+
+تم التحقق من سياسة \LR{MDP}
+عبر خمسة سيناريوهات ممثلة تشمل
+ازدحام محور الشمال-الجنوب،
+وحركة الشرق-الغرب، والأولوية لحالة
+الطوارئ، وأولوية المشاة، وحالة عدم
+وجود حركة مرور. في كل حالة كانت
+المرحلة المنتجة مطابقة للمرحلة المتوقعة.
+تم التحقق من الفرضيات الخمس للبحث،
+مما يُثبت جدوى خط معالجة متكامل
+للذكاء الاصطناعي المدمج لإدارة
+حركة المرور الحضرية بذكاء،
+فاتحاً الطريق أمام عمليات النشر
+الفعلية في المدن الذكية المغربية.
+
+\end{Arabic}
+
+\vspace{0.4cm}
+
+\begin{tcolorbox}[
+  colback  = LightGray,
+  colframe = DarkGray,
+  arc      = 3pt,
+  boxrule  = 0.5pt
+]
+\begin{Arabic}
+\textbf{الكلمات المفتاحية:}
+الذكاء الاصطناعي المدمج،
+\LR{YOLO26n}،
+\LR{Raspberry Pi 5}،
+إدارة حركة المرور،
+المدينة الذكية،
+الخصوصية بالتصميم،
+إخفاء الهوية،
+\LR{ONNX FP32}،
+عملية قرار ماركوف،
+القانون \LR{09-08}،
+\LR{Bellevue Traffic Dataset}.
+\end{Arabic}
+\end{tcolorbox}
+\fi

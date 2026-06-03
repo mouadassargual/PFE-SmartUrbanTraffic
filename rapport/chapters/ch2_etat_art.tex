@@ -1,0 +1,1733 @@
+\chapter{État de l'art}
+\label{ch:etat_art}
+
+\section*{Introduction}
+\phantomsection
+\addcontentsline{toc}{section}{Introduction}
+
+L'état de l'art constitue le fondement de toute
+démarche scientifique rigoureuse. Son objectif
+est double : d'une part, identifier et analyser
+les travaux existants dans le domaine afin d'éviter
+toute redondance ; d'autre part, mettre en évidence
+les lacunes de la littérature et justifier ainsi
+les contributions originales du présent travail.
+
+La sélection des articles présentés dans ce chapitre
+a été effectuée selon des critères stricts de qualité
+scientifique. Les recherches ont été conduites sur
+les bases de données \textbf{IEEE Xplore},
+\textbf{Google Scholar} et \textbf{Scopus},
+en appliquant les filtres suivants :
+récence des publications (2024--2026),
+indexation dans des journaux reconnus
+(quartiles Q1 et Q2), et pertinence directe
+avec les piliers thématiques du projet.
+Les références retenues ont été gérées
+via l'outil bibliographique \textbf{Zotero}.
+
+Ce chapitre est organisé autour de six piliers
+thématiques, chacun correspondant à un composant
+clé du système développé :
+
+\begin{enumerate}
+    \item Les \textbf{Smart Cities} et la gestion
+    du trafic urbain — contexte applicatif
+    \item La \textbf{détection d'objets} en temps réel
+    — fondements et approches
+    \item L'\textbf{architecture YOLO} — évolution
+    et innovations récentes
+    \item L'\textbf{Edge AI} et le déploiement embarqué
+    — optimisation et contraintes
+    \item La \textbf{protection des données personnelles}
+    — techniques et cadre légal
+    \item La \textbf{décision adaptative} des feux —
+    modèles et formalisations
+\end{enumerate}
+
+Ce chapitre se conclut par une synthèse comparative
+positionnant notre travail par rapport à l'existant
+et identifiant le gap scientifique que ce mémoire
+entend combler.
+
+% ============================================================
+% Section 2.1 — Smart City et gestion du trafic urbain
+% ============================================================
+
+\section{Smart City et gestion du trafic urbain}
+
+\subsection{Définition et concept}
+
+Une \textbf{ville intelligente} (\textit{smart city})
+désigne une agglomération urbaine qui exploite
+les technologies numériques — capteurs IoT,
+intelligence artificielle, caméras intelligentes,
+cloud computing et analyse de données en temps réel
+— pour améliorer la qualité de vie de ses citoyens,
+optimiser la gestion des ressources et résoudre
+les problèmes urbains chroniques tels que la
+congestion routière, la pollution, la consommation
+énergétique et la sécurité publique~\cite{mystakidis2025}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{smartcity_dimensions}
+\caption{Les composantes d'une ville intelligente}
+\label{fig:smartcity_dimensions}
+\end{figure}
+
+\subsection{Les six dimensions d'une smart city}
+
+Le modèle de référence de la littérature identifie
+six dimensions complémentaires~\cite{hazarika2024} :
+
+\begin{itemize}
+    \item \textbf{Smart Mobility :} systèmes de
+    transport connectés, régulation du trafic
+    en temps réel, réduction de la congestion.
+
+    \item \textbf{Smart Environment :} gestion
+    durable des ressources naturelles, réduction
+    des émissions, espaces verts intelligents.
+
+    \item \textbf{Smart Economy :} innovation
+    locale, circuits courts, attractivité
+    économique numérique.
+
+    \item \textbf{Smart Governance :} transparence
+    des données, participation citoyenne,
+    e-services publics.
+
+    \item \textbf{Smart Living :} amélioration
+    de l'accès à la santé, à l'éducation
+    et à la sécurité publique.
+
+    \item \textbf{Smart People :} implication
+    active des habitants dans les décisions
+    et transformations urbaines.
+\end{itemize}
+
+\subsection{Le Maroc et l'initiative Smart City Agadir}
+
+Le Maroc s'inscrit résolument dans la dynamique
+mondiale des villes intelligentes, dans le cadre
+de sa stratégie nationale de transformation
+numérique et de développement durable.
+Plusieurs domaines sont concernés : la mobilité
+intelligente, la gestion du trafic, la sécurité
+urbaine, l'énergie intelligente et les services
+numériques~\cite{elalaoui2025}.
+
+La ville d'Agadir a lancé en 2022 son programme
+officiel de transformation, structuré autour
+de douze axes stratégiques illustrés en
+Figure~\ref{fig:agadir_plan}. Ce programme,
+inscrit dans le Plan d'Action Communal 2022--2027,
+vise à faire d'Agadir une métropole moderne,
+durable et intelligente, modèle pour l'Afrique
+et le bassin méditerranéen.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{agadir_smartcity}
+\caption{Dimensions et composantes du Plan
+         d'Action Communal d'Agadir 2022--2027
+\textit{(Source : Agadir Green City Action Plan,
+         Ville d'Agadir, 2022)}}
+\label{fig:agadir_plan}
+\end{figure}
+
+L'étude d'El Alaoui et al. (2025) menée auprès
+de 98 jeunes résidents d'Agadir révèle que
+la majorité soutient activement la transformation
+de leur ville en ville intelligente, et que
+cette adhésion est étroitement corrélée au niveau
+d'éducation et à la maîtrise des technologies
+numériques~\cite{elalaoui2025}. Ce consensus social
+constitue le contexte favorable au déploiement
+de notre système.
+
+\subsection{La gestion du trafic comme composante
+            centrale}
+
+Au sein des six dimensions de la smart city,
+la \textbf{Smart Mobility} occupe une place
+structurante car elle conditionne directement
+la fluidité urbaine, la qualité de l'air
+et la sécurité des usagers.
+
+Les systèmes de feux à cycles fixes hérités
+des villes traditionnelles génèrent des temps
+d'attente inutiles et des congestions chroniques,
+particulièrement dans des contextes à forte
+densité de deux-roues comme Agadir. Le
+Tableau~\ref{tab:feux_comparaison} illustre
+les limites de ces systèmes face aux approches
+adaptatives intelligentes.
+
+\begin{table}[H]
+\centering
+\caption{Feux à cycles fixes vs système
+         adaptatif intelligent}
+\begin{tabularx}{\textwidth}{Xcc}
+\toprule
+\textbf{Critère} &
+\textbf{Feux fixes} &
+\textbf{Système adaptatif} \\
+\midrule
+Temps d'attente moyen &
+Élevé & Réduit \\
+Adaptation au trafic réel &
+Non & Oui \\
+Priorité véhicules urgence &
+Non & Oui \\
+Gestion heures de pointe &
+Inefficace & Optimisée \\
+Détection piétons &
+Non & Oui \\
+Conformité Loi 09-08 &
+Non applicable & Intégrée \\
+Coût opérationnel &
+Faible & Modéré \\
+\bottomrule
+\end{tabularx}
+\label{tab:feux_comparaison}
+\end{table}
+
+Les travaux récents confirment l'efficacité
+des approches adaptatives : Hazarika et al.
+(2024) démontrent qu'un système basé sur
+la détection YOLO permet de réduire
+significativement les temps d'attente
+aux intersections~\cite{hazarika2024}.
+
+La Figure~\ref{fig:traffic_ai} illustre
+un exemple concret de système de gestion
+intelligente du trafic, combinant détection
+visuelle et comptage par zones — principe
+au cœur de notre approche.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]
+  {traffic_intersection_ai}
+\caption{Détection et comptage intelligents
+         des véhicules et piétons par zones
+         à une intersection urbaine
+\textit{(Source : Parquery, 2024)}}
+\label{fig:traffic_ai}
+\end{figure}
+
+C'est précisément ce verrou que ce projet
+adresse, en proposant un système de détection
+et de contrôle adaptatif entièrement embarqué
+sur Raspberry Pi 5, s'inscrivant dans la
+feuille de route Smart City Agadir 2022--2027.
+
+% ============================================================
+% Section 2.2 — Détection d'objets en temps réel
+% ============================================================
+
+\section{Détection d'objets en temps réel}
+
+\subsection{Définition et enjeux}
+
+La \textbf{détection d'objets} est une tâche
+fondamentale de la vision par ordinateur qui
+consiste à localiser et classifier simultanément
+les objets présents dans une image ou une vidéo.
+Contrairement à la simple classification qui
+répond à la question \textit{"Qu'est-ce que
+c'est ?"}, la détection répond à deux questions
+simultanées : \textit{"Qu'est-ce que c'est ?"}
+et \textit{"Où est-ce ?"}~\cite{ramos2025}.
+
+Dans notre contexte de gestion du trafic,
+la détection d'objets doit satisfaire deux
+critères fondamentaux et souvent antagonistes :
+
+\begin{itemize}
+    \item \textbf{La précision :} capacité à
+    détecter correctement tous les objets
+    présents sans faux positifs ni faux négatifs.
+
+    \item \textbf{La vitesse :} capacité à
+    traiter les frames en temps réel, condition
+    indispensable pour une décision adaptative
+    des feux de circulation.
+\end{itemize}
+
+\subsection{Approches one-stage et two-stage}
+
+Les algorithmes de détection d'objets se
+divisent en deux grandes familles selon
+leur architecture de traitement,
+illustrées par les Figures~\ref{fig:two_stage_detection},
+\ref{fig:one_stage_detection} et
+\ref{fig:detection_approaches}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{1vs2_stages}
+\caption{Comparaison visuelle des approches one-stage et two-stage
+\textit{(Source : Sharkyun, Medium, 2024)}}
+\label{fig:detection_approaches}
+\end{figure}
+
+\textbf{Les approches two-stage} (R-CNN,
+Fast R-CNN, Faster R-CNN) fonctionnent en
+deux étapes séquentielles : une première
+phase génère des régions candidates
+(\textit{Region Proposal Network}), puis
+une seconde phase classifie et affine
+ces régions. Cette approche offre une
+précision élevée mais au détriment
+de la vitesse d'inférence, la rendant
+inadaptée aux applications temps réel.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{2stagedetection}
+\caption{Principe de fonctionnement d'une approche two-stage
+\textit{(Source : Sharkyun, Medium, 2024)}}
+\label{fig:two_stage_detection}
+\end{figure}
+
+\textbf{Les approches one-stage} (YOLO, SSD,
+RetinaNet) réalisent la détection en un seul
+passage du réseau : localisation et
+classification sont effectuées simultanément.
+Cette architecture permet d'atteindre des
+vitesses d'inférence compatibles avec le
+traitement temps réel, au prix d'une légère
+réduction de précision~\cite{ramos2025}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{1stagedetection}
+\caption{Principe de fonctionnement d'une approche one-stage
+\textit{(Source : Sharkyun, Medium, 2024)}}
+\label{fig:one_stage_detection}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Comparaison approches one-stage
+         et two-stage}
+\begin{tabularx}{\textwidth}{Xcc}
+\toprule
+\textbf{Critère} &
+\textbf{Two-Stage} &
+\textbf{One-Stage} \\
+\midrule
+Vitesse d'inférence &
+Faible & \textbf{Élevée} \\
+Précision (mAP) &
+\textbf{Élevée} & Bonne \\
+Traitement temps réel &
+Difficile & \textbf{Oui} \\
+Déploiement embarqué &
+Non & \textbf{Oui} \\
+Complexité &
+Élevée & \textbf{Faible} \\
+Exemples &
+Faster R-CNN & \textbf{YOLO, SSD} \\
+\bottomrule
+\end{tabularx}
+\label{tab:one_two_stage}
+\end{table}
+
+Dans notre contexte de déploiement sur
+Raspberry Pi 5 avec contrainte temps réel,
+\textbf{l'approche one-stage est la seule
+viable}, justifiant le choix de la famille
+YOLO développée dans la section suivante.
+
+\subsection{Métriques d'évaluation}
+
+L'évaluation des modèles de détection repose
+sur un ensemble de métriques standardisées
+que nous utilisons tout au long de ce travail.
+
+\subsubsection{Intersection over Union (IoU)}
+
+L'\textbf{Intersection over Union} mesure
+le chevauchement entre la boîte englobante
+prédite $\hat{B}$ et la boîte réelle $B$ :
+
+\begin{equation}
+\text{IoU} = \frac{|\hat{B} \cap B|}
+             {|\hat{B} \cup B|}
+\label{eq:iou}
+\end{equation}
+
+Un seuil IoU $\geq 0.5$ est généralement
+utilisé pour considérer une détection
+comme correcte.
+
+\subsubsection{Bounding Box}
+
+La localisation d'un objet est représentée
+par une boîte englobante définie par
+quatre coordonnées :
+
+\begin{equation}
+B = (x_{center},\ y_{center},\ w,\ h)
+\label{eq:bbox}
+\end{equation}
+
+où $(x_{center}, y_{center})$ désignent
+le centre de la boîte, $w$ sa largeur
+et $h$ sa hauteur, normalisés par rapport
+aux dimensions de l'image.
+
+\subsubsection{Précision et Rappel}
+
+La \textbf{précision} mesure le taux de
+détections correctes parmi toutes les
+détections effectuées :
+
+\begin{equation}
+\text{Précision} =
+\frac{VP}{VP + FP}
+\label{eq:precision}
+\end{equation}
+
+Le \textbf{rappel} mesure le taux d'objets
+réels correctement détectés :
+
+\begin{equation}
+\text{Rappel} =
+\frac{VP}{VP + FN}
+\label{eq:recall}
+\end{equation}
+
+où $VP$ désigne les vrais positifs,
+$FP$ les faux positifs et $FN$
+les faux négatifs.
+
+\subsubsection{F1-Score}
+
+Le \textbf{F1-Score} est la moyenne
+harmonique de la précision et du rappel,
+offrant un compromis entre les deux :
+
+\begin{equation}
+F1 = 2 \times
+\frac{\text{Précision} \times \text{Rappel}}
+     {\text{Précision} + \text{Rappel}}
+\label{eq:f1}
+\end{equation}
+
+\subsubsection{Mean Average Precision (mAP)}
+
+La \textbf{mAP} est la métrique de référence
+pour évaluer les modèles de détection.
+Elle calcule la moyenne des précisions
+moyennes sur toutes les classes $C$ :
+
+\begin{equation}
+\text{mAP} = \frac{1}{C}
+\sum_{c=1}^{C} AP_c
+\label{eq:map}
+\end{equation}
+
+où $AP_c$ est l'aire sous la courbe
+Précision-Rappel pour la classe $c$.
+Dans ce travail, nous rapportons la
+\textbf{mAP@50} (seuil IoU = 0.5)
+et la \textbf{mAP@50-95} (moyenne
+sur IoU de 0.5 à 0.95, pas de 0.05).
+
+\subsubsection{Non-Maximum Suppression (NMS)}
+
+Le \textbf{NMS} est un algorithme de
+post-traitement qui élimine les détections
+redondantes. Pour chaque classe, il conserve
+uniquement la détection avec la confiance
+la plus élevée parmi celles dont l'IoU
+dépasse un seuil $\theta_{NMS}$ :
+
+\begin{equation}
+\hat{B}^* = \arg\max_{\hat{B}}
+\text{conf}(\hat{B})\
+\text{s.t.}\ \text{IoU}(\hat{B}, \hat{B}')
+< \theta_{NMS}
+\label{eq:nms}
+\end{equation}
+
+\begin{definitionbox}{Note — NMS-Free dans YOLO26n}
+L'architecture YOLO26n, retenue dans ce travail,
+supprime le NMS grâce à un mécanisme
+d'assignation \textit{One-to-One} introduit
+dans YOLOv10. Cette innovation réduit
+significativement la latence d'inférence,
+avantage crucial pour le déploiement
+sur Raspberry Pi 5~\cite{sapkota2025}.
+\end{definitionbox}
+
+\begin{table}[H]
+\centering
+\caption{Récapitulatif des métriques
+         d'évaluation utilisées}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Métrique} &
+\textbf{Formule} &
+\textbf{Interprétation} \\
+\midrule
+IoU &
+$\frac{|\hat{B} \cap B|}{|\hat{B} \cup B|}$ &
+Chevauchement prédit/réel \\
+Précision &
+$\frac{VP}{VP+FP}$ &
+Fiabilité des détections \\
+Rappel &
+$\frac{VP}{VP+FN}$ &
+Complétude des détections \\
+F1-Score &
+$2 \cdot \frac{P \cdot R}{P+R}$ &
+Compromis précision-rappel \\
+mAP@50 &
+$\frac{1}{C}\sum AP_c$ &
+Performance globale (IoU=0.5) \\
+mAP@50-95 &
+Moyenne mAP@[.5:.95] &
+Performance globale stricte \\
+\bottomrule
+\end{tabularx}
+\label{tab:metriques}
+\end{table}
+
+% ============================================================
+% Section 2.3 — Architecture YOLO : évolution et innovations
+% ============================================================
+
+\section{Architecture YOLO : évolution et innovations}
+
+\subsection{Principe fondamental}
+
+\textbf{YOLO} (\textit{You Only Look Once}) est
+un algorithme de détection d'objets de type
+\textit{one-stage} introduit par Redmon et al.
+en 2015. Son nom résume son principe fondamental :
+l'image n'est parcourue qu'une seule fois par
+le réseau de neurones, contrairement aux approches
+two-stage qui nécessitent deux passes
+séquentielles~\cite{ramos2025}.
+
+Le principe de base de YOLO repose sur la
+\textbf{division de l'image en une grille}
+de $S \times S$ cellules. Pour chaque cellule,
+le réseau prédit simultanément :
+
+\begin{itemize}
+    \item $B$ boîtes englobantes avec leurs
+    coordonnées $(x, y, w, h)$ et un score
+    de confiance $c$
+
+    \item $C$ probabilités de classe
+    $P(classe_i | objet)$
+\end{itemize}
+
+La prédiction finale pour chaque boîte est :
+
+\begin{equation}
+\text{Score} = P(classe_i | objet)
+\times \text{IoU}_{pred}^{truth}
+\label{eq:yolo_score}
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{yoloxyz}
+\caption{Principe de détection YOLO : division de l'image en grille et prédiction des boîtes englobantes
+\textit{(Source : Blent.ai, 2024)}}
+\label{fig:yolo_grid}
+\end{figure}
+
+\subsection{Architecture générale}
+
+Toutes les versions modernes de YOLO partagent
+une architecture commune organisée en trois
+composantes, illustrées en
+Figure~\ref{fig:yolo_architecture} :
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{yoloarchitecture}
+\caption{Architecture générale d'un modèle YOLO moderne
+\textit{(Source : MDPI Electronics, 2025)}}
+\label{fig:yolo_architecture}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Backbone :} réseau de
+    neurones convolutifs chargé d'extraire
+    les caractéristiques visuelles
+    (\textit{features}) de l'image d'entrée
+    à différents niveaux d'abstraction.
+    Dans YOLO26n : C3k2 et C2PSA.
+
+    \item \textbf{Neck :} module de fusion
+    multi-échelle qui agrège les features
+    extraites par le backbone à différentes
+    résolutions, permettant de détecter
+    des objets de tailles variées.
+    Implémenté via FPN (\textit{Feature
+    Pyramid Network}) et PAN
+    (\textit{Path Aggregation Network}).
+
+    \item \textbf{Head :} tête de détection
+    qui produit les prédictions finales :
+    coordonnées des boîtes englobantes,
+    scores de confiance et probabilités
+    de classe. Les architectures modernes
+    utilisent une \textit{Decoupled Head}
+    séparant classification et régression.
+\end{itemize}
+
+\subsection{Évolution de YOLOv1 à YOLO26}
+
+La famille YOLO a connu une évolution
+remarquable depuis sa création en 2015,
+chaque version apportant des innovations
+architecturales significatives~\cite{ramos2025}.
+
+\begin{table}[H]
+\centering
+\caption{Évolution des principales versions
+         YOLO (2015--2025)}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Version} &
+\textbf{Année} &
+\textbf{Innovation principale} \\
+\midrule
+YOLOv1 & 2015 &
+Concept one-stage, grille $7\times7$,
+détection unifiée \\
+YOLOv2 & 2016 &
+Anchor boxes, multi-scale training,
+BatchNorm \\
+YOLOv3 & 2018 &
+Détection multi-échelle (3 niveaux),
+Darknet-53 \\
+YOLOv4 & 2020 &
+CSP, Mosaic augmentation,
+CIOU Loss \\
+YOLOv5 & 2020 &
+PyTorch natif, variantes nano/small/
+medium/large \\
+YOLOv7 & 2022 &
+E-ELAN, compound scaling,
+meilleur ratio vitesse/précision \\
+YOLOv8 & 2023 &
+Anchor-free, Decoupled Head,
+architecture unifiée Ultralytics \\
+YOLOv9 & 2024 &
+GELAN, PGI (Programmable Gradient
+Information) \\
+YOLOv10 & 2024 &
+NMS-Free, One-to-One assignment,
+latence réduite \\
+YOLOv11 & 2024 &
+C3k2, PSA, amélioration backbone \\
+\rowcolor{PrimaryBlue!15}
+\textbf{YOLO26} & \textbf{2025} &
+\textbf{ProgLoss, STAL, MuSGD,
+NMS-Free natif, optimisé edge} \\
+\bottomrule
+\end{tabularx}
+\label{tab:yolo_evolution}
+\end{table}
+
+\subsection{YOLO26n — Architecture retenue}
+
+YOLO26n constitue l'architecture retenue
+dans ce travail, justifiée par trois
+innovations majeures~\cite{sapkota2025} :
+
+\begin{resultbox}{Innovations YOLO26n}
+\textbf{ProgLoss} — Équilibrage progressif
+des pertes d'entraînement pour une convergence
+plus stable.\\[0.3cm]
+\textbf{STAL} (\textit{Small Target-Aware
+Learning}) — Mécanisme d'assignation dédié
+aux petits objets, améliorant la détection
+des piétons et motos.\\[0.3cm]
+\textbf{MuSGD} — Optimiseur hybride
+SGD+Muon inspiré des LLMs, offrant une
+convergence jusqu'à 47\% plus rapide
+que les optimiseurs classiques.
+\end{resultbox}
+
+\vspace{0.4cm}
+
+Sur le plan des performances embarquées,
+YOLO26n réduit la latence CPU de \textbf{43\%}
+par rapport à YOLOv10 sur architecture ARM,
+ce qui en fait le candidat idéal pour
+le déploiement sur Raspberry Pi 5~\cite{sapkota2025}.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison embarquée des variantes nano
+         retenues pour le prototype}
+\begin{tabularx}{\textwidth}{lccccX}
+\toprule
+\textbf{Modèle} &
+\textbf{Format} &
+\textbf{FPS Pi 5} &
+\textbf{mAP50} &
+\textbf{Person} &
+\textbf{Params} \\
+\midrule
+YOLOv8n  & FP32 & 5.3 & 69.8\% & 41.5\% & 3.0M \\
+YOLOv11n & FP32 & 5.9 & 69.2\% & 44.8\% & 2.6M \\
+\rowcolor{PrimaryBlue!15}
+\textbf{YOLO26n} &
+\textbf{FP32} & \textbf{7.6} &
+\textbf{65.6\%} & \textbf{41.5\%} &
+\textbf{2.4M} \\
+\bottomrule
+\end{tabularx}
+\label{tab:yolo_benchmark}
+\end{table}
+
+\begin{definitionbox}{Justification du choix YOLO26n}
+Les variantes nano affichent des niveaux de précision
+proches, mais YOLO26n est retenu pour trois raisons :
+(1) meilleur FPS mesuré sur Raspberry Pi 5 ;
+(2) architecture récente avec NMS-Free natif réduisant
+la latence sur CPU ARM ; (3) faible nombre de paramètres
+(2.4M), avantage décisif pour
+le déploiement embarqué.
+\end{definitionbox}
+% ============================================================
+% Section 2.4 — Edge AI et déploiement embarqué
+% ============================================================
+
+\section{Edge AI et déploiement embarqué}
+
+\subsection{Définition et positionnement}
+
+L'\textbf{Edge AI} désigne le paradigme de déploiement
+de l'intelligence artificielle directement sur le
+dispositif de collecte des données, sans transmission
+vers un serveur distant ou un Cloud. Dans notre
+architecture, ce choix n'est pas seulement une
+contrainte technique — c'est un impératif
+\textbf{Privacy-by-Design} : en traitant les flux
+vidéo localement sur le Raspberry Pi 5, aucune
+donnée personnelle identifiable ne quitte
+l'intersection~\cite{ficili2025}.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.94\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  stack/.style={
+    draw, rounded corners=7pt,
+    align=center, minimum width=4.2cm,
+    minimum height=0.88cm, very thick
+  },
+  cloud/.style={stack, draw=red!65, fill=red!8},
+  edge/.style={stack, draw=AccentGreen, fill=AccentGreen!8},
+  title/.style={font=\bfseries\small, align=center},
+  choice/.style={
+    draw=PrimaryBlue,
+    fill=PrimaryBlue!6,
+    rounded corners=6pt,
+    align=center,
+    text width=8.7cm,
+    font=\scriptsize\bfseries
+  },
+  note/.style={
+    draw=DarkGray!45, fill=white,
+    rounded corners=4pt, align=center,
+    font=\scriptsize, text width=4.3cm
+  },
+  arrow/.style={-{Latex[length=3mm]}, line width=1pt}
+]
+
+\node[title, color=red!70] at (0,0) {Architecture Cloud};
+\node[cloud] (c1) at (0,-0.90) {Caméra};
+\node[cloud] (c2) at (0,-2.05) {Transmission réseau};
+\node[cloud] (c3) at (0,-3.20) {Serveur distant};
+\node[note, draw=red!45] at (0,-4.25)
+  {Risque principal : images brutes transmises hors de l'intersection.};
+
+\node[title, color=AccentGreen] at (7.2,0) {Architecture Edge AI retenue};
+\node[edge] (e1) at (7.2,-0.90) {Caméra};
+\node[edge, draw=PrimaryBlue, fill=PrimaryBlue!8] (e2) at (7.2,-2.05)
+  {Raspberry Pi 5\\YOLO26n FP32};
+\node[edge] (e3) at (7.2,-3.20) {Décision locale};
+\node[note, draw=AccentGreen!55] at (7.2,-4.25)
+  {Choix retenu : latence faible et traitement Privacy-by-Design.};
+
+\draw[arrow, red!65] (c1) -- (c2);
+\draw[arrow, red!65] (c2) -- (c3);
+\draw[arrow, AccentGreen] (e1) -- (e2);
+\draw[arrow, AccentGreen] (e2) -- (e3);
+
+\node[choice] at (3.6,-5.25)
+{Décision architecturale : traiter localement la vidéo pour réduire
+la latence et éviter l'envoi des images brutes vers le Cloud.};
+
+\end{tikzpicture}}
+\caption{Comparaison Architecture Cloud vs Edge AI
+         pour la gestion du trafic}
+\label{fig:cloud_vs_edge}
+\end{figure}
+
+\subsection{Défis du déploiement sur hardware limité}
+
+Le déploiement d'un système de vision par ordinateur
+sur Raspberry Pi 5 soulève des défis spécifiques,
+absents des environnements GPU utilisés pour
+l'entraînement~\cite{wang2025} :
+
+\begin{itemize}
+    \item \textbf{Mémoire limitée :} le Raspberry Pi 5
+    dispose de 4 à 8 Go de RAM partagée entre le
+    système d'exploitation, le modèle et le pipeline
+    de traitement vidéo.
+
+    \item \textbf{Absence de GPU dédié :} le processeur
+    ARM Cortex-A76 ne dispose pas d'unité de calcul
+    tensoriel, rendant l'inférence entièrement
+    dépendante du CPU.
+
+    \item \textbf{Contrainte thermique :} un usage
+    intensif du CPU génère une montée en température
+    pouvant entraîner une réduction de fréquence
+    (\textit{thermal throttling}).
+
+    \item \textbf{Exigence temps réel :} la gestion
+    adaptative des feux nécessite un traitement
+    minimal de 5 FPS pour garantir des décisions
+    cohérentes avec l'évolution du trafic.
+\end{itemize}
+
+\subsection{Techniques d'optimisation}
+
+Pour répondre à ces contraintes, plusieurs
+techniques d'optimisation ont été évaluées,
+notamment la sélection d'une variante nano,
+la quantification des poids et l'export ONNX.
+
+\subsubsection{Sélection de la variante nano}
+
+La famille YOLO propose plusieurs variantes
+selon la taille du modèle : nano, small,
+medium, large et xlarge. Wang et al. (2025)
+démontrent que les variantes \textit{small}
+et supérieures dépassent les capacités
+temps réel des dispositifs ARM, atteignant
+moins de 2 FPS~\cite{wang2025}.
+
+La variante \textbf{nano} constitue le seul
+point d'opération viable sur CPU ARM sans GPU,
+offrant le meilleur compromis entre précision
+et vitesse d'inférence.
+
+\subsubsection{Quantification des poids}
+
+La \textbf{quantification} réduit la précision
+numérique des poids du modèle pour accélérer
+l'inférence et réduire l'empreinte mémoire.
+Trois formats ont été évalués :
+
+\begin{equation}
+\text{FP32} \xrightarrow{\text{quantif.}}
+\text{FP16} \xrightarrow{\text{quantif.}}
+\text{INT8}
+\label{eq:quantif}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des formats de précision
+         sur Raspberry Pi 5}
+\begin{tabularx}{\textwidth}{lccXl}
+\toprule
+\textbf{Format} &
+\textbf{FPS réel} &
+\textbf{Latence} &
+\textbf{Commentaire} &
+\textbf{Statut} \\
+\midrule
+FP32 & 3.7 & 178ms &
+Modèle standard, instable & Attention \\
+FP16 & — & — &
+Incompatible CPU ARM & Non retenu \\
+\rowcolor{PrimaryBlue!10}
+INT8 & \textbf{5.0} & 193ms &
+Stable, retenu & Retenu \\
+\bottomrule
+\end{tabularx}
+\label{tab:formats}
+\end{table}
+
+Le format \textbf{FP16} est incompatible avec
+le CPU ARM Cortex-A76 : en l'absence de
+Tensor Cores, les opérations FP16 sont émulées
+en logiciel, résultant en une latence supérieure
+à FP32. Le format \textbf{INT8} est retenu car
+il réduit la taille du modèle de 75\% et
+stabilise le pipeline à \textbf{5.0 FPS réels}
+sur Raspberry Pi 5.
+
+\subsubsection{Export ONNX}
+
+Le modèle PyTorch natif (\texttt{.pt}) est
+optimisé pour GPU et incompatible avec une
+inférence efficace sur CPU ARM.
+L'\textbf{ONNX Runtime} (\textit{Open Neural
+Network Exchange}) permet d'exporter le modèle
+dans un format universel, optimisé pour
+l'inférence CPU via le fournisseur
+\texttt{CPUExecutionProvider}~\cite{wang2025} :
+
+\begin{equation}
+\texttt{best.pt}
+\xrightarrow{\text{export ONNX}}
+\texttt{yolo26n\_int8.onnx}
+\xrightarrow{\text{ONNX Runtime}}
+\text{Inférence Pi 5}
+\label{eq:onnx}
+\end{equation}
+
+\begin{resultbox}{Résultat benchmark Pi 5 —
+                  YOLO26n INT8}
+Le benchmark empirique conduit sur Raspberry Pi 5
+avec YOLO26n INT8 via ONNX Runtime révèle :
+\textbf{5.0 FPS réels}, \textbf{193ms} de latence
+moyenne, validant la faisabilité du déploiement
+temps réel sur dispositif embarqué à ressources
+limitées. Ce résultat constitue, à notre
+connaissance, le premier benchmark de YOLO26n
+sur cette plateforme.
+\end{resultbox}
+
+
+% ============================================================
+% Section 2.5 — Protection des données personnelles
+% ============================================================
+
+\section{Protection des données personnelles}
+
+\subsection{Cadre légal marocain — Loi 09-08}
+
+Au Maroc, la protection des données personnelles
+est régie par la \textbf{Loi n°09-08} du 18 février
+2009 relative à la protection des personnes physiques
+à l'égard du traitement des données à caractère
+personnel. Cette loi a institué la
+\textbf{Commission Nationale de contrôle de la
+protection des Données à caractère Personnel
+(CNDP)}, chargée de vérifier que tout traitement
+de données personnelles est licite, légal et ne
+porte pas atteinte à la vie privée, aux libertés
+et aux droits fondamentaux des
+citoyens~\cite{elalaoui2025}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textwidth]{cndp}
+\caption{Commission Nationale de contrôle de la protection des Données à caractère Personnel (CNDP)
+\textit{(Source : site officiel de la CNDP, 2024)}}
+\label{fig:cndp}
+\end{figure}
+
+\begin{definitionbox}{Loi 09-08 — Principes fondamentaux}
+Tout système collectant ou traitant des données
+personnelles de citoyens marocains doit respecter
+les principes suivants :
+\begin{itemize}
+    \item \textbf{Finalité :} les données ne peuvent
+    être utilisées qu'aux fins déclarées.
+    \item \textbf{Proportionnalité :} seules les
+    données strictement nécessaires sont collectées.
+    \item \textbf{Sécurité :} des mesures techniques
+    appropriées doivent protéger les données.
+    \item \textbf{Durée limitée :} les données ne
+    sont pas conservées au-delà du nécessaire.
+\end{itemize}
+\end{definitionbox}
+
+\subsection{Enjeux dans les systèmes de surveillance
+            du trafic}
+
+Le déploiement de caméras dans l'infrastructure
+de gestion du trafic soulève des enjeux
+fondamentaux de protection des données
+personnelles. En filmant les intersections,
+ces systèmes capturent inévitablement :
+
+\begin{itemize}
+    \item Les \textbf{visages} des conducteurs
+    et piétons — donnée biométrique sensible.
+    \item Les \textbf{plaques d'immatriculation}
+    — données permettant l'identification
+    du véhicule et de son propriétaire.
+    \item Les \textbf{comportements et déplacements}
+    — données révélant les habitudes de vie.
+\end{itemize}
+
+Dans un contexte où notre système pourrait être
+étendu, partagé ou interconnecté avec d'autres
+infrastructures urbaines, la protection de ces
+données dès la conception devient une obligation
+légale et éthique. Razi et al. (2025) confirment
+que les techniques d'anonymisation basiques
+restent vulnérables aux attaques de
+ré-identification par des algorithmes
+d'IA avancés~\cite{razi2025}.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  cell/.style={
+    draw, rounded corners=4pt,
+    align=center, minimum width=4.05cm,
+    minimum height=0.72cm,
+    font=\scriptsize
+  },
+  risk/.style={cell, draw=red!60, fill=red!8},
+  sol/.style={cell, draw=AccentGreen, fill=AccentGreen!8},
+  head/.style={
+    draw, rounded corners=5pt,
+    align=center, minimum width=4.05cm,
+    minimum height=0.72cm,
+    font=\small\bfseries, text=white
+  },
+  arrow/.style={-{Latex[length=2.7mm]}, line width=0.95pt, PrimaryBlue}
+]
+
+\node[head, fill=red!68] (h1) at (0,0) {Risque};
+\node[head, fill=PrimaryBlue] (h2) at (5.0,0) {Mesure technique};
+\node[head, fill=AccentGreen!80!black] (h3) at (10.0,0) {Effet obtenu};
+
+\node[risk] (r1) at (0,-0.95) {Identification directe};
+\node[sol]  (m1) at (5.0,-0.95) {Floutage gaussien\\des personnes};
+\node[sol]  (e1) at (10.0,-0.95) {Visages non exploitables};
+
+\node[risk] (r2) at (0,-1.85) {Suivi des déplacements};
+\node[sol]  (m2) at (5.0,-1.85) {Tracking après anonymisation};
+\node[sol]  (e2) at (10.0,-1.85) {Identité non conservée};
+
+\node[risk] (r3) at (0,-2.75) {Fuite de données};
+\node[sol]  (m3) at (5.0,-2.75) {Traitement local Edge AI};
+\node[sol]  (e3) at (10.0,-2.75) {Aucun envoi Cloud};
+
+\node[risk] (r4) at (0,-3.65) {Non-conformité Loi 09-08};
+\node[sol]  (m4) at (5.0,-3.65) {Minimisation + anonymisation};
+\node[sol]  (e4) at (10.0,-3.65) {Privacy-by-Design};
+
+\foreach \r/\m/\e in {r1/m1/e1,r2/m2/e2,r3/m3/e3,r4/m4/e4}{
+  \draw[arrow] (\r.east) -- (\m.west);
+  \draw[arrow] (\m.east) -- (\e.west);
+}
+
+\node[
+  draw=AccentOrange,
+  fill=AccentOrange!7,
+  rounded corners=5pt,
+  align=center,
+  font=\scriptsize,
+  text width=9.6cm
+] at (5.0,-4.65)
+{Principe retenu : anonymiser avant toute visualisation et limiter
+le système aux statistiques nécessaires à la décision de trafic.};
+\end{tikzpicture}}
+\caption{Risques de violation de la vie privée
+         et solutions adoptées dans notre système}
+\label{fig:privacy_risks}
+\end{figure}
+
+\subsection{Techniques d'anonymisation}
+
+La littérature identifie plusieurs techniques
+d'anonymisation applicables aux flux vidéo
+de surveillance~\cite{jeremiah2024} :
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des techniques
+         d'anonymisation vidéo}
+\begin{tabularx}{\textwidth}{lllXl}
+\toprule
+\textbf{Technique} &
+\textbf{Vitesse} &
+\textbf{Edge} &
+\textbf{Limite} &
+\textbf{Choix} \\
+\midrule
+Floutage gaussien &
+Rapide & Oui &
+Partiellement réversible &
+\textbf{Retenu} \\
+Pixelisation &
+Rapide & Oui &
+Réversible par SR &
+— \\
+Silhouette &
+Moyen & Partiel &
+Perte d'info visuelle &
+— \\
+GAN anonymisation &
+Lent & Non &
+Trop lourd pour Pi 5 &
+— \\
+Differential Privacy &
+Variable & Partiel &
+Complexe à calibrer &
+— \\
+\bottomrule
+\end{tabularx}
+\label{tab:anon_techniques}
+\end{table}
+
+\subsection{Principe Privacy-by-Design}
+
+Le \textbf{Privacy-by-Design} est un paradigme
+architectural selon lequel la protection des
+données est intégrée dès la conception du système,
+et non ajoutée \textit{a posteriori}. Dans notre
+pipeline, ce principe se traduit par trois règles
+concrètes :
+
+\begin{enumerate}
+    \item \textbf{Anonymisation immédiate :}
+    le floutage gaussien est appliqué
+    \textit{immédiatement après la détection}
+    (module M4), avant tout traitement ultérieur,
+    selon l'ordre M1$\rightarrow$M2$\rightarrow$\textbf{M4}$\rightarrow$M3$\rightarrow$M5$\rightarrow$M6.
+
+    \item \textbf{Zéro stockage vidéo :}
+    aucun flux vidéo n'est enregistré ni transmis.
+    Seules les métadonnées agrégées — densité
+    et comptages par classe — transitent
+    vers le module de décision.
+
+    \item \textbf{Traitement local :}
+    l'intégralité du pipeline s'exécute
+    sur le Raspberry Pi 5, sans connexion
+    à un serveur externe.
+\end{enumerate}
+
+\begin{warningbox}{Limite documentée}
+Le floutage gaussien, bien qu'efficace pour
+empêcher l'identification visuelle directe,
+reste théoriquement vulnérable à des techniques
+de super-résolution avancées basées sur les
+GANs~\cite{razi2025,jeremiah2024}. Dans notre
+contexte de gestion du trafic — dont l'objectif
+est le comptage et non l'identification
+individuelle — cette limitation est acceptable.
+L'implémentation de techniques d'anonymisation
+irréversibles constitue une perspective
+d'amélioration documentée dans le Chapitre 6.
+\end{warningbox}
+
+% ============================================================
+% Section 2.6 — Décision adaptative des feux
+% ============================================================
+
+\section{Décision adaptative des feux de circulation}
+
+\subsection{Limites des systèmes à cycles fixes}
+
+Les systèmes de feux de circulation traditionnels
+fonctionnent selon des cycles temporels prédéfinis,
+indépendamment des conditions réelles du trafic.
+Cette approche statique génère deux types de
+problèmes critiques : des temps d'attente inutiles
+lorsque la voie prioritaire est vide, et des
+congestions lorsque la densité du trafic dépasse
+les hypothèses de dimensionnement du cycle.
+
+Li et al. (2025) démontrent qu'une approche
+adaptative permet de réduire le temps d'attente
+moyen de \textbf{27,34\%} par rapport aux cycles
+fixes, avec des gains atteignant \textbf{68,40\%}
+dans les cas de trafic fortement
+déséquilibré~\cite{li2025}.
+
+\subsection{Formalisation par Processus de Décision
+            Markovien}
+
+Un \textbf{Processus de Décision Markovien (MDP)}
+est un cadre mathématique formel pour modéliser
+la prise de décision séquentielle dans un
+environnement dont l'état évolue en réponse
+aux actions prises. Un MDP est défini par
+le quadruplet $(S, A, T, R)$~\cite{michailidis2025}.
+
+\begin{definitionbox}{Définition — MDP}
+Un Processus de Décision Markovien est défini par :\par
+\textbf{$S$ — Espace d'états :} ensemble des configurations possibles du système.\par
+\textbf{$A$ — Espace d'actions :} ensemble des décisions possibles.\par
+\textbf{$T(s, a, s')$ — Fonction de transition :} probabilité d'atteindre $s'$ depuis $s$ après action $a$.\par
+\textbf{$R(s, a)$ — Fonction de récompense :} signal d'évaluation de la décision.
+\end{definitionbox}
+
+\subsubsection{État $S$ — Description de
+               l'intersection}
+
+L'état courant de l'intersection est représenté
+par un vecteur à six composantes :
+
+\begin{equation}
+s = (q_N,\ q_S,\ q_E,\ q_O,\ p,\ e)
+\label{eq:state}
+\end{equation}
+
+où :
+\begin{itemize}
+    \item $q_N, q_S, q_E, q_O$ — densités de
+    véhicules détectés dans les directions
+    Nord, Sud, Est et Ouest
+    \item $p$ — présence de piétons dans la
+    zone de passage ($p \in \{0, 1, ..., n\}$)
+    \item $e$ — présence d'un véhicule d'urgence
+    ($e \in \{0, 1\}$)
+\end{itemize}
+
+\subsubsection{Actions $A$ — Phases de feux}
+
+L'espace d'actions correspond aux phases
+de feux disponibles, combinant direction
+et durée :
+
+\begin{equation}
+A = \{\text{Phase}_i \times D_j\}
+\label{eq:actions}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Phases et durées du module de décision}
+\begin{tabularx}{\textwidth}{llXl}
+\toprule
+\textbf{Phase} &
+\textbf{Feux verts} &
+\textbf{Condition d'activation} &
+\textbf{Durée} \\
+\midrule
+North-South &
+Nord + Sud &
+Densité Nord/Sud maximale &
+15--45s \\
+East-West &
+Est + Ouest &
+Densité Est/Ouest maximale &
+15--45s \\
+Pedestrian &
+Piétons &
+Piétons + trafic faible &
+30s \\
+Emergency &
+Tous rouges &
+Véhicule d'urgence détecté &
+45s \\
+All-Red &
+Aucun &
+Aucun trafic détecté &
+15s \\
+\bottomrule
+\end{tabularx}
+\label{tab:phases}
+\end{table}
+
+\subsubsection{Récompense $R$ — Minimisation
+               du temps d'attente}
+
+La fonction de récompense est définie comme
+l'opposé du temps d'attente moyen
+(\textit{Average Waiting Time} — AWT) :
+
+\begin{equation}
+R(s, a) = -\text{AWT}(s, a)
+\label{eq:reward}
+\end{equation}
+
+Cette formulation garantit que la politique
+optimale minimise les temps d'attente
+à l'intersection.
+
+\subsection{Fonction de scoring pondéré}
+
+Contrairement aux approches par Apprentissage
+par Renforcement (RL) telles que Li et al. (2025),
+notre système résout le MDP par une
+\textbf{politique déterministe} basée sur
+une fonction de scoring pondéré. Ce choix est
+motivé par les contraintes CPU du Raspberry Pi 5,
+incompatibles avec l'inférence d'un réseau
+neuronal de politique en temps réel.
+
+La fonction de scoring pour chaque direction
+$i$ est définie par :
+
+\begin{equation}
+\text{Score}(i) = w_v \cdot q_i^{veh}
+               + w_p \cdot q_i^{ped}
+               + w_e \cdot q_i^{urg}
+\label{eq:score}
+\end{equation}
+
+où les coefficients de pondération sont :
+
+\begin{table}[H]
+\centering
+\caption{Coefficients de pondération MDP}
+\begin{tabularx}{\textwidth}{llXl}
+\toprule
+\textbf{Coefficient} &
+\textbf{Valeur} &
+\textbf{Justification} &
+\textbf{Classe} \\
+\midrule
+$w_v$ & 1.0 &
+Poids de base véhicule &
+car, bus, truck, moto \\
+$w_p$ & 1.5 &
+Priorité piétons ($\times$1.5) &
+person \\
+$w_e$ & 100.0 &
+Priorité absolue urgence &
+emergency\_vehicle \\
+\bottomrule
+\end{tabularx}
+\label{tab:coefficients}
+\end{table}
+
+\subsection[Politique de décision optimale]{Politique de décision $\pi^*(s)$}
+
+La politique optimale est appliquée selon
+une hiérarchie de règles :
+
+\begin{equation}
+\pi^*(s) =
+\begin{cases}
+\text{Emergency} &
+\text{si } e > 0 \\[6pt]
+\text{Pedestrian} &
+\text{si } p > 0 \text{ et }
+\max_i q_i^{veh} < \theta_H \\[6pt]
+\arg\max_i \text{Score}(i) &
+\text{sinon}
+\end{cases}
+\label{eq:policy}
+\end{equation}
+
+La durée de phase est déterminée par
+la densité de la direction prioritaire :
+
+\begin{equation}
+D^* =
+\begin{cases}
+45\text{s} & \text{si } q_i^{veh}
+              \geq \theta_H = 10 \\
+30\text{s} & \text{si } \theta_M \leq
+              q_i^{veh} < \theta_H \\
+15\text{s} & \text{si } q_i^{veh}
+              < \theta_M = 5
+\end{cases}
+\label{eq:duration}
+\end{equation}
+
+
+% ============================================================
+% Figure — Décision MDP π*(s)
+% ============================================================
+
+\begin{figure}[H]
+\centering
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  mdpstep/.style={
+    draw=PrimaryBlue, fill=PrimaryBlue!7,
+    rounded corners=6pt, align=center,
+    text width=5.25cm,
+    minimum height=1.05cm
+  },
+  test/.style={
+    draw=AccentOrange, fill=AccentOrange!9,
+    rounded corners=6pt, align=center,
+    text width=5.25cm,
+    minimum height=1.05cm
+  },
+  action/.style={
+    draw, rounded corners=6pt, align=center,
+    text width=4.15cm,
+    minimum height=1.02cm,
+    font=\small\bfseries
+  },
+  arrow/.style={-{Latex[length=3mm]}, line width=1.05pt, color=DarkGray},
+  yeslabel/.style={font=\scriptsize\bfseries, fill=white, inner sep=2pt},
+  nolabel/.style={font=\scriptsize\bfseries, fill=white, inner sep=2pt,
+                  text=DarkGray}
+]
+
+\node[mdpstep] (state) at (0,0)
+  {État observé\\$s=(q_N,q_S,q_E,q_O,p,e)$};
+\node[test] (urg) at (0,-1.65)
+  {1. Priorité urgence\\$e>0$ ?};
+\node[test] (ped) at (0,-3.30)
+  {2. Priorité piétons\\$p>0$ et trafic faible ?};
+\node[mdpstep] (score) at (0,-4.95)
+  {3. Calcul des scores\\$Score(i)=w_vq_i+w_pp_i+w_ee_i$};
+\node[test] (traffic) at (0,-6.60)
+  {4. Trafic détecté\\$\max_i Score(i)>0$ ?};
+
+\node[action, draw=red!65, fill=red!8] (a1) at (7.1,-1.65)
+  {Emergency\\45s};
+\node[action, draw=AccentOrange, fill=AccentOrange!10] (a2) at (7.1,-3.30)
+  {Pedestrian\\30s};
+\node[action, draw=AccentGreen, fill=AccentGreen!9] (a3) at (7.1,-5.85)
+  {Phase optimale\\$\arg\max_i Score(i)$};
+\node[action, draw=DarkGray, fill=LightGray] (a4) at (7.1,-7.15)
+  {All-Red\\15s};
+
+\draw[arrow] (state.south) -- (urg.north);
+\draw[arrow] (urg.south) -- node[nolabel, midway, xshift=-0.62cm] {Non} (ped.north);
+\draw[arrow] (ped.south) -- node[nolabel, midway, xshift=-0.62cm] {Non} (score.north);
+\draw[arrow] (score.south) -- (traffic.north);
+\draw[arrow, red!65] (urg.east) -- node[yeslabel, above] {Oui} (a1.west);
+\draw[arrow, AccentOrange] (ped.east) -- node[yeslabel, above] {Oui} (a2.west);
+\draw[arrow, AccentGreen] (traffic.east) -- ++(1.0,0)
+  |- node[yeslabel, pos=0.24, above] {Oui} (a3.west);
+\draw[arrow] (traffic.east) -- ++(1.0,0)
+  |- node[nolabel, pos=0.24, below] {Non} (a4.west);
+
+\node[
+  draw=DarkGray!45,
+  fill=white,
+  rounded corners=5pt,
+  align=center,
+  font=\scriptsize,
+  text width=11.8cm
+] at (3.55,-8.45)
+{Paramètres utilisés : $w_v=1.0$, $w_p=1.5$, $w_e=100.0$.\\
+La politique reste déterministe afin de rester légère sur Raspberry Pi 5.};
+
+\end{tikzpicture}%
+}
+\caption{Organigramme de la politique
+         de décision $\pi^*(s)$ —
+         Module M5
+         \textit{(Source : auteur)}}
+\label{fig:mdp_flowchart}
+\end{figure}
+
+\subsection{Validation expérimentale}
+
+La politique de décision a été validée sur
+cinq scénarios représentatifs des situations
+rencontrées dans les intersections urbaines.
+
+\begin{table}[H]
+\centering
+\caption{Validation de la politique $\pi^*(s)$
+         sur 5 scénarios}
+\begin{tabularx}{\textwidth}{lXll}
+\toprule
+\textbf{Scénario} &
+\textbf{État} &
+\textbf{Phase} &
+\textbf{Durée} \\
+\midrule
+Dense Nord &
+12 veh Nord, 2 piétons &
+North-South & 45s -- validé \\
+Trafic équilibré &
+4 veh par direction &
+North-South & 30s -- validé \\
+Urgence Est &
+1 ambulance Est &
+Emergency & 45s -- validé \\
+Piétons seuls &
+4 piétons, trafic faible &
+Pedestrian & 30s -- validé \\
+Aucun trafic &
+0 objet détecté &
+All-Red & 15s -- validé \\
+\bottomrule
+\end{tabularx}
+\label{tab:validation_mdp}
+\end{table}
+
+Les cinq scénarios produisent la décision
+attendue, validant expérimentalement
+l'hypothèse H5.
+
+% ============================================================
+% Section 2.7 — Synthèse et positionnement
+% ============================================================
+
+\section{Synthèse et positionnement}
+
+\subsection{Tableau comparatif de l'état de l'art}
+
+Le tableau suivant synthétise les douze travaux
+analysés et les positionne par rapport
+aux contributions de ce mémoire.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.12}
+\caption{Synthèse comparative de l'état de l'art}
+\label{tab:synthese}
+\begin{tabularx}{\textwidth}{p{2.4cm}p{1.15cm}X X X X}
+\toprule
+\textbf{Travail} &
+\textbf{Année} &
+\textbf{Détection} &
+\textbf{Edge AI} &
+\textbf{Privacy} &
+\textbf{Décision} \\
+\midrule
+
+Mystakidis & 2025 &
+Review TCP & — & — & — \\
+
+Hazarika & 2024 &
+tiny-YOLOv3 &
+Raspberry Pi &
+Non &
+SJF+RR \\
+
+El Alaoui & 2025 &
+— & — & — &
+Étude sociale \\
+
+Ramos & 2025 &
+Review YOLO &
+Partiel & — & — \\
+
+Dinesh & 2024 &
+YOLOv7 &
+PC standard &
+Non &
+Densité \\
+
+Sapkota & 2025 &
+YOLO26n &
+Jetson Orin &
+Non & — \\
+
+Wang & 2025 &
+Review léger &
+Pi 4B & — & — \\
+
+Ficili & 2025 &
+— &
+Pi 3 + IoT &
+Partiel &
+Monitoring \\
+
+Jeremiah & 2024 &
+MobileNet &
+Edge MEC &
+Floutage & — \\
+
+Razi & 2025 &
+— & — &
+Survey & — \\
+
+Li & 2025 &
+Capteurs &
+— &
+FL &
+Federated DRL \\
+
+Michailidis & 2025 &
+Review RL &
+— & — &
+RL Survey \\
+
+\midrule
+\rowcolor{PrimaryBlue!15}
+\textbf{Notre travail} &
+\textbf{2026} &
+\textbf{YOLO-26n} &
+\textbf{Pi 5 8GB} &
+\textbf{PbD} &
+\textbf{MDP scoring} \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Gap identifié dans la littérature}
+
+L'analyse comparative révèle une lacune
+fondamentale dans la littérature existante.
+Aucun travail ne combine simultanément
+les quatre dimensions de notre approche :
+
+\clearpage
+\begin{figure}[H]
+\centering
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  pillar/.style={
+    draw, rounded corners=7pt,
+    text width=3.15cm,
+    minimum height=1.22cm,
+    align=center,
+    font=\small\bfseries,
+    very thick
+  },
+  center/.style={
+    draw=DarkGray,
+    fill=white,
+    rounded corners=8pt,
+    text width=5.6cm,
+    minimum height=1.42cm,
+    align=center,
+    font=\small\bfseries,
+    very thick,
+    drop shadow
+  },
+  gap/.style={
+    draw=AccentOrange,
+    fill=AccentOrange!8,
+    rounded corners=5pt,
+    align=center,
+    font=\scriptsize,
+    text width=12.2cm
+  },
+  plus/.style={font=\Large\bfseries, color=DarkGray},
+  arrow/.style={-{Latex[length=3mm]}, line width=1.15pt, color=DarkGray}
+]
+
+\node[pillar, draw=PrimaryBlue, fill=PrimaryBlue!9]
+  (detect) at (0,2.05) {Détection temps réel\\YOLO26n};
+\node[pillar, draw=AccentGreen, fill=AccentGreen!9]
+  (edge) at (4.05,2.05) {Déploiement Edge AI\\Raspberry Pi 5};
+\node[pillar, draw=AccentOrange, fill=AccentOrange!10]
+  (privacy) at (8.10,2.05) {Protection des données\\Loi 09-08};
+\node[pillar, draw=red!65, fill=red!8]
+  (mdp) at (12.15,2.05) {Décision adaptative\\MDP};
+
+\node[plus] at (2.03,2.05) {$+$};
+\node[plus] at (6.08,2.05) {$+$};
+\node[plus] at (10.13,2.05) {$+$};
+
+\node[
+  draw=DarkGray!55,
+  fill=LightGray!35,
+  rounded corners=5pt,
+  align=center,
+  font=\scriptsize\bfseries,
+  text width=11.8cm
+] (combo) at (6.08,0.45)
+  {Intersection retenue : une seule chaîne expérimentale combine les quatre dimensions.};
+
+\node[center] (work) at (6.08,-1.35)
+  {Pipeline complet M1--M6\\\textit{Notre contribution}};
+
+\draw[arrow] (combo.south) -- (work.north);
+
+\node[gap] at (6.08,-3.10)
+  {Gap couvert : combinaison rare dans un même pipeline expérimental\\
+  YOLO + Edge AI + Privacy-by-Design + MDP.};
+
+\end{tikzpicture}}
+\caption{Positionnement de notre travail —
+         intersection des quatre dimensions}
+\label{fig:positioning}
+\end{figure}
+
+\begin{warningbox}{Gap scientifique confirmé}
+Michailidis et al. (2025) concluent que
+\textit{"le déploiement en conditions réelles
+demeure le défi le plus pressant et non résolu"}
+dans le domaine du contrôle adaptatif des feux.
+Notre travail apporte une réponse concrète à
+ce gap en proposant le premier pipeline complet
+combinant détection YOLO26n, anonymisation
+Privacy-by-Design, décision MDP et déploiement
+sur Raspberry Pi 5 8GB, validé sur des données
+incluant le contexte urbain marocain.
+\end{warningbox}
+
+\subsection{Positionnement de notre contribution}
+
+Notre système se distingue des travaux existants
+sur six points fondamentaux, résumés dans
+le Tableau~\ref{tab:positioning} :
+
+\begin{table}[H]
+\centering
+\caption{Différenciation par rapport
+         aux travaux les plus proches}
+\begin{tabularx}{\textwidth}{lXX}
+\toprule
+\textbf{Critère} &
+\textbf{Travaux existants} &
+\textbf{Notre contribution} \\
+\midrule
+Modèle YOLO &
+YOLOv3 à YOLOv11 &
+\textbf{YOLO26n (2025)} \\
+
+Hardware &
+PC, Jetson, Pi 3-4 &
+\textbf{Raspberry Pi 5 8GB} \\
+
+Format déploiement &
+PyTorch, TFLite &
+\textbf{ONNX FP32} \\
+
+Privacy &
+Absente ou partielle &
+\textbf{Privacy-by-Design} \\
+
+Décision &
+RL complexe ou fixe &
+\textbf{MDP déterministe léger} \\
+
+Contexte &
+Europe, Asie, USA &
+\textbf{Maroc (Agadir)} \\
+
+Pipeline &
+Partiel &
+\textbf{Complet M1--M6} \\
+\bottomrule
+\end{tabularx}
+\label{tab:positioning}
+\end{table}
+
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+
+Ce chapitre a présenté un état de l'art
+structuré autour de six piliers thématiques,
+s'appuyant sur douze articles scientifiques
+récents (2024--2026) issus de journaux
+indexés Q1-Q2.
+
+L'analyse comparative a permis d'identifier
+un gap fondamental : l'absence de pipeline
+complet intégrant détection temps réel,
+anonymisation conforme à la Loi 09-08,
+décision adaptative et déploiement sur
+dispositif embarqué minimal dans le contexte
+des smart cities marocaines.
+
+Le chapitre suivant présente l'architecture
+et la conception du système développé
+pour combler ce gap.

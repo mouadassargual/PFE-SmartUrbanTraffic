@@ -1,0 +1,4 @@
+[core]
+    no_scm = True
+    analytics = false
+    site_cache_dir = .dvc/tmp/site-cache

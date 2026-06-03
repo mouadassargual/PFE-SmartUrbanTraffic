@@ -1,0 +1,144 @@
+% ============================================================
+% Chapitre 7 — Conclusion générale
+% ============================================================
+
+\chapter{Conclusion générale}
+\label{ch:conclusion}
+
+\section*{Bilan du travail}
+\phantomsection
+\addcontentsline{toc}{section}{Bilan du travail}
+
+Ce mémoire avait pour objectif de concevoir et de
+valider un système de gestion intelligente des feux
+de circulation, déployable sur Raspberry Pi 5, capable
+de détecter les usagers de la route, d'anonymiser les
+piétons et de produire une décision de signalisation
+adaptative. La question centrale était donc de savoir
+s'il est possible de combiner \textbf{Edge AI},
+\textbf{Privacy-by-Design} et \textbf{décision MDP}
+dans un pipeline unique, léger et exploitable dans un
+contexte de smart city marocaine.
+
+Les résultats obtenus montrent que cette approche est
+réalisable. Le pipeline final intègre six modules :
+acquisition vidéo, détection YOLO26n, anonymisation,
+tracking par zones polygonales, décision MDP et
+dashboard Flask. L'ensemble fonctionne sans dépendance
+cloud et respecte une architecture compatible avec les
+contraintes matérielles d'un dispositif embarqué.
+
+\section*{Résultats principaux}
+\phantomsection
+\addcontentsline{toc}{section}{Résultats principaux}
+
+Le modèle final \textbf{YOLO26n Step 3 960} atteint
+\textbf{0.792 mAP50} et \textbf{0.579 mAP50-95} sur
+le split test. Les classes véhicules les plus importantes
+pour la décision de trafic obtiennent de très bons scores,
+notamment \textit{car} (0.931 mAP50),
+\textit{motorcycle} (0.915 mAP50) et
+\textit{emergency\_vehicle} (0.926 mAP50). La classe
+\textit{person} progresse par rapport au modèle 800,
+mais reste la limite principale du système avec un rappel
+test de 0.353.
+
+Le benchmark embarqué confirme que la famille YOLO26n
+nano est compatible avec le Raspberry Pi 5. La configuration
+FP32 benchmarkée atteint \textbf{7.6 FPS réels}, au-dessus
+du seuil minimal de 5 FPS retenu pour la gestion adaptative
+des feux. Le modèle 960 constitue le meilleur choix de
+précision; l'export 800 améliore le débit sur Pi jusqu'à
+\textbf{3.94 FPS} lorsque chaque frame est inférée.
+Avec \texttt{--vid-stride 2}, le même export couvre
+\textbf{7.84 frames source/s}, au prix d'une inférence
+sur une frame source sur deux. La quantification INT8
+dynamique a été testée, mais elle n'est pas retenue car
+elle réduit la taille du modèle tout en descendant à
+\textbf{2.06 FPS} sur CPU ARM.
+
+Le module d'anonymisation applique un floutage gaussien
+sur toutes les boîtes détectées de classe \textit{person}
+avant le tracking. Cette position dans le pipeline réduit
+la circulation de pixels identifiants et concrétise le
+principe Privacy-by-Design. Enfin, la politique MDP produit
+la décision attendue sur les cinq scénarios de validation :
+trafic dense Nord-Sud, trafic Est-Ouest, urgence,
+priorité piétonne et absence de trafic.
+
+\begin{table}[H]
+\centering
+\caption{Synthèse finale des hypothèses}
+\small
+\begin{tabularx}{\textwidth}{clX}
+\toprule
+\textbf{H} & \textbf{Axe} & \textbf{Conclusion} \\
+\midrule
+H1 & Détection &
+Validée avec une limite sur les petits piétons :
+0.792 mAP50 test, rappel \textit{person} de 0.353. \\
+H2 & Dataset hybride &
+Validée empiriquement : le passage 800 vers 960 améliore
+la mAP50 globale et la classe \textit{person}. \\
+H3 & Edge AI &
+Validée pour la famille YOLO26n nano à 7.6 FPS sur Pi 5;
+Step 3 atteint 7.84 frames source/s avec l'export 800
+et \texttt{--vid-stride 2}, mais seulement une frame
+sur deux est inférée. \\
+H4 & Privacy-by-Design &
+Validée sur les détections : 100\% des boîtes
+\textit{person} détectées sont floutées avant tracking. \\
+H5 & Décision MDP &
+Validée sur cinq scénarios représentatifs. \\
+\bottomrule
+\end{tabularx}
+\label{tab:conclusion_hypotheses}
+\end{table}
+
+\section*{Limites}
+\phantomsection
+\addcontentsline{toc}{section}{Limites}
+
+La première limite concerne la détection des petits piétons.
+Même avec CityPersons, les tiny crops, une résolution de
+960 pixels et les ROI, certains piétons éloignés ou occultés
+peuvent ne pas être détectés. Cette limite entraîne un risque
+résiduel pour l'anonymisation, car seules les personnes
+détectées peuvent être floutées.
+
+La seconde limite concerne le compromis précision/latence sur
+Raspberry Pi 5. Les résultats Pi valident la famille YOLO26n
+nano en temps réel, mais le pipeline complet Step 3 960 avec
+ROI atteint 2.16 FPS et monte seulement à 2.51 FPS sans ROI
+additionnelles. L'export 800 monte à 3.94 FPS sans ROI et
+3.45 FPS avec ROI personnes lorsque toutes les frames
+sont inférées. Le mode \texttt{--vid-stride 2} atteint
+7.84 frames source/s, ce qui valide un compromis de
+couverture vidéo, mais pas une inférence exhaustive de
+chaque frame. La quantification INT8 dynamique a été
+écartée car elle ralentit le modèle Step 3 à
+2.06 FPS sur Pi 5.
+Enfin, le dataset local
+marocain reste encore limité : un déploiement réel à Agadir
+nécessiterait davantage de vidéos couvrant la nuit, la pluie,
+les intersections complexes et les véhicules atypiques.
+
+\section*{Perspectives}
+\phantomsection
+\addcontentsline{toc}{section}{Perspectives}
+
+Les perspectives prioritaires sont l'élargissement du dataset
+marocain, l'amélioration de la classe \textit{person}, le test
+de stratégies d'accélération matérielle ou de planification
+d'inférence adaptative, et l'étude d'une coordination
+multi-intersections. À moyen terme, la politique
+MDP déterministe pourrait être comparée à un agent de
+\textit{Deep Reinforcement Learning} distillé pour edge device.
+
+Ce travail montre qu'une solution locale, explicable et
+respectueuse des données personnelles peut constituer une
+base réaliste pour des expérimentations smart city à Agadir.
+Il ne remplace pas une infrastructure urbaine complète, mais
+il démontre qu'un prototype intelligent, embarqué et conforme
+aux contraintes juridiques peut être construit avec un coût
+matériel réduit et une architecture maîtrisable.

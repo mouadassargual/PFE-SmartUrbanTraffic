@@ -1,0 +1,95 @@
+dataset:
+  name: dataset_step3_tiny_person_crops
+  yaml: data/dataset/dataset_step3_tiny_person_crops/data.yaml
+  images_total: 6761
+  train_images: 5589
+  val_images: 779
+  test_images: 393
+  person_instances_total: 23096
+  classes:
+    - bus
+    - car
+    - emergency_vehicle
+    - motorcycle
+    - person
+    - truck
+
+training:
+  architecture: YOLO26n
+  start_weights: models/downloads/YOLO26n_step3_800_best.pt
+  final_pt: models/downloads/YOLO26n_step3_960_best.pt
+  local_final_pt_status: synced_local
+  final_onnx: models/downloads/YOLO26n_step3_960_best.onnx
+  imgsz: 960
+  epochs_planned: 40
+  epoch_best: 15
+  epoch_stopped: 25
+  batch_auto: 26
+  optimizer: AdamW
+  lr0: 0.0001
+  lrf: 0.1
+  mosaic: 0.1
+  close_mosaic: 5
+  seed: 42
+
+experimental_exports:
+  onnx_800_from_step3_960:
+    source_pt: models/downloads/YOLO26n_step3_960_best.pt
+    output_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+    imgsz: 800
+    opset: 12
+    simplify: true
+    status: exported_local_for_pi_benchmark
+  onnx_800_int8:
+    source_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+    output_onnx: models/downloads/YOLO26n_step3_800_from960_int8.onnx
+    method: dynamic
+    calibration_video: data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4
+    calibration_frames: 64
+    calibration_stride: 5
+    imgsz: 800
+    quant_format: dynamic
+    weight_type: QInt8
+    per_channel: false
+    status: exported_dynamic_int8_for_pi_benchmark
+
+inference:
+  conf: 0.35
+  iou: 0.45
+  imgsz: 960
+  person_roi: true
+  person_roi_every: 5
+  person_roi_dedup_iou: 0.50
+  vehicle_roi: true
+  vehicle_roi_every: 5
+  vehicle_roi_padding: 24
+
+deployment:
+  target: Raspberry Pi 5 8GB
+  runtime: ONNX Runtime
+  provider: CPUExecutionProvider
+  dashboard_port: 5000
+  benchmark_family_fps: 7.6
+  benchmark_family: YOLO26n nano FP32
+  step3_960_fps: 2.16
+  step3_960_latency_ms: 463
+  step3_960_frames: 300
+  step3_960_dashboard: false
+  step3_960_full_roi_fps: 2.16
+  step3_960_person_roi_every_10_fps: 2.48
+  step3_960_no_roi_fps: 2.51
+  step3_800_from960_no_roi_fps: 3.94
+  step3_800_from960_no_roi_latency_ms: 254
+  step3_800_from960_person_roi_every_10_fps: 3.45
+  step3_800_from960_person_roi_every_10_latency_ms: 290
+  step3_800_from960_no_roi_vid_stride_2_fps: 4.28
+  step3_800_from960_no_roi_vid_stride_2_effective_source_fps: 7.84
+  step3_800_from960_no_roi_vid_stride_2_latency_ms: 234
+  step3_800_int8_dynamic_no_roi_fps: 2.06
+  step3_800_int8_dynamic_no_roi_latency_ms: 485
+  step3_800_int8_dynamic_no_roi_vid_stride_2_fps: 1.97
+  step3_800_int8_dynamic_no_roi_vid_stride_2_effective_source_fps: 3.76
+  step3_800_int8_dynamic_no_roi_vid_stride_2_latency_ms: 508
+  step3_960_fps_status: confirmed_analysis_mode
+  step3_800_from960_fps_status: best_pi5_tradeoff_with_stride
+  step3_800_int8_dynamic_status: tested_not_retained_on_pi5_cpu

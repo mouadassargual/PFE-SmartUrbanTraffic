@@ -1,0 +1,817 @@
+% ============================================================
+% Chapitre 5 — Expérimentations et Résultats
+% ============================================================
+
+\chapter{Expérimentations et Résultats}
+\label{ch:resultats}
+
+\section*{Introduction}
+\phantomsection
+\addcontentsline{toc}{section}{Introduction}
+
+Ce chapitre présente les résultats expérimentaux
+obtenus lors de la validation du système
+\textit{Smart Traffic Agadir}. Les expérimentations
+visent à vérifier les cinq hypothèses formulées
+au Chapitre~\ref{ch:introduction} : performance
+de détection, apport du dataset final, faisabilité
+embarquée sur Raspberry Pi 5, anonymisation
+Privacy-by-Design et décision adaptative MDP.
+
+Les tests utilisent les vidéos du
+\textbf{Bellevue Traffic Video Dataset}~\cite{pradhananga2025}
+ainsi que les données locales collectées dans le
+contexte urbain d'Agadir/Lqliaa. Le pipeline complet
+M1$\rightarrow$M6 est évalué avec le modèle final
+\textbf{YOLO26n Step 3 960}, exporté en ONNX FP32.
+Les résultats sont analysés selon trois niveaux :
+les métriques de détection, les preuves visuelles
+produites par le pipeline, puis la cohérence de la
+décision de feux.
+
+% ============================================================
+\section{Environnement d'expérimentation}
+
+\begin{table}[H]
+\centering
+\caption{Environnement de test}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Composant} & \textbf{Spécification} \\
+\midrule
+Hardware cible &
+Raspberry Pi 5 — 8GB RAM,
+CPU ARM Cortex-A76 @ 2.4GHz \\
+Runtime embarqué &
+ONNX Runtime —
+CPUExecutionProvider \\
+Modèle accuracy final &
+YOLO26n Step 3 960 —
+\texttt{YOLO26n\_step3\_960\_best.onnx} \\
+Format d'export &
+ONNX FP32 \\
+Résolution finale &
+960$\times$960 pixels \\
+Dataset d'entraînement &
+Dataset Step 3 : 6 761 images,
+train/val/test sans fuite de données \\
+Vidéos testées &
+Bellevue NE8th, 150th/Eastgate,
+116th/NE12th — jour et nuit \\
+\bottomrule
+\end{tabularx}
+\label{tab:env_test}
+\end{table}
+
+\begin{warningbox}{Lecture des résultats FPS}
+Le modèle Step 3 960 est le meilleur modèle de
+précision obtenu. Son redéploiement final sur
+Raspberry Pi 5 avec ROI personnes et ROI véhicules
+atteint \textbf{2.16 FPS} sur 300 frames, soit environ
+\textbf{463 ms/frame}. Les variantes allégées atteignent
+\textbf{2.48 FPS} avec ROI personnes toutes les 10 frames
+et \textbf{2.51 FPS} sans ROI additionnelles. Ce résultat
+correspond à un mode d'analyse haute précision : le coût
+dominant vient de l'inférence ONNX en 960$\times$960.
+Un export expérimental 800$\times$800 depuis les mêmes
+poids atteint \textbf{3.94 FPS} sans ROI et
+\textbf{3.45 FPS} avec ROI personnes toutes les 10 frames.
+Sans saut de frame, l'export 800 reste sous le seuil de
+5 FPS. En revanche, avec \texttt{--vid-stride 2}, il
+couvre \textbf{7.84 frames source/s} tout en inférant
+une frame sur deux. La famille YOLO26n nano benchmarkée
+à \textbf{7.6 FPS} reste la référence d'inférence
+temps réel sur chaque frame ; l'export 800 avec stride
+constitue le meilleur compromis pour le pipeline Step 3.
+\end{warningbox}
+
+% ============================================================
+\section{Validation H1 — Performance de détection}
+
+\textbf{Hypothèse H1 :}
+\textit{un modèle de détection one-stage fine-tuné
+sur le dataset final peut atteindre des performances
+suffisantes pour détecter les véhicules et piétons
+en conditions réelles urbaines.}
+
+\subsection{Résultats globaux du modèle final}
+
+\begin{table}[H]
+\centering
+\caption{Résultats globaux YOLO26n Step 3 960}
+\small
+\begin{tabularx}{\textwidth}{Xcccc}
+\toprule
+\textbf{Split} &
+\textbf{Précision} &
+\textbf{Rappel} &
+\textbf{mAP50} &
+\textbf{mAP50-95} \\
+\midrule
+Validation &
+0.797 & 0.677 & 0.765 & 0.545 \\
+Test &
+\textbf{0.815} & \textbf{0.710} &
+\textbf{0.792} & \textbf{0.579} \\
+\bottomrule
+\end{tabularx}
+\label{tab:yolo26n_960_global}
+\end{table}
+
+Le modèle final atteint \textbf{79.2\% de mAP50}
+et \textbf{57.9\% de mAP50-95} sur le split test.
+Ces résultats sont satisfaisants pour un modèle nano
+de 2.37M paramètres destiné à un déploiement edge.
+Les classes les plus critiques pour le trafic
+(\textit{car}, \textit{motorcycle},
+\textit{emergency\_vehicle}) dépassent 91\% de mAP50.
+
+\begin{table}[H]
+\centering
+\caption{Résultats par classe — split test}
+\small
+\begin{tabularx}{\textwidth}{lcccc}
+\toprule
+\textbf{Classe} &
+\textbf{Précision} &
+\textbf{Rappel} &
+\textbf{mAP50} &
+\textbf{mAP50-95} \\
+\midrule
+bus & 0.875 & 0.613 & 0.739 & 0.623 \\
+car & 0.871 & 0.869 & \textbf{0.931} & 0.707 \\
+emergency\_vehicle & 0.784 & \textbf{0.905} & 0.926 & \textbf{0.729} \\
+motorcycle & 0.787 & 0.881 & 0.915 & 0.583 \\
+person & 0.797 & 0.353 & 0.512 & 0.257 \\
+truck & 0.776 & 0.642 & 0.731 & 0.577 \\
+\midrule
+\textbf{all} & \textbf{0.815} & \textbf{0.710} &
+\textbf{0.792} & \textbf{0.579} \\
+\bottomrule
+\end{tabularx}
+\label{tab:yolo26n_960_classes}
+\end{table}
+
+\subsection{Illustrations visuelles}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {image_analysee}
+\caption{Image analysée : détections, classes,
+         scores de confiance et polygones de zones
+         \textit{(Source : auteur)}}
+\label{fig:detection_jour}
+\end{figure}
+
+La Figure~\ref{fig:detection_jour} montre la sortie
+de perception sur une intersection réelle : les objets
+détectés sont associés à leur classe et à leur score
+de confiance, tandis que les polygones N/E/S/W restent
+visibles pour relier la détection au module de décision.
+Cette image correspond à la vue d'analyse fixe du
+dashboard : elle ne remplace pas la vidéo source, mais
+sert de preuve expérimentale pour le comptage par zone.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {pipeline_screenshots/06_pipeline_final_overlay}
+\caption{Sortie finale du pipeline sur vidéo de nuit
+         \textit{(Source : auteur)}}
+\label{fig:detection_nuit}
+\end{figure}
+
+Les conditions nocturnes réduisent le nombre de
+détections, principalement à cause de la faible
+luminosité, des ombres et des occultations. Cette
+limite est cohérente avec la littérature, qui rapporte
+une baisse de performance des détecteurs YOLO en
+environnements faiblement éclairés.
+
+\subsection{Ajustements d'inférence}
+
+Pour améliorer la robustesse du système sur les objets
+difficiles, l'inférence finale repose sur un seuil global
+de confiance fixé par défaut à \textbf{0.35}. Le code
+permet également de définir des seuils spécifiques par
+classe via les arguments \texttt{--person-conf},
+\texttt{--truck-conf}, \texttt{--bus-conf},
+\texttt{--car-conf}, \texttt{--motorcycle-conf} et
+\texttt{--emergency-conf}. Cette possibilité est utile
+pour les classes rares ou difficiles, sans modifier le
+modèle entraîné.
+
+Un second passage ROI est également activable : les crops
+centrés sur les zones piétonnes ou les zones de comptage
+permettent de récupérer des objets éloignés ou
+partiellement masqués. Les ROI personnes sont exécutées
+toutes les 5 frames par défaut, avec une déduplication
+IoU de 0.50 ; les ROI véhicules peuvent être appliquées
+sur les polygones MDP avec un padding de 24 pixels.
+
+Dans un cas réel observé sur la vidéo NE8th, un véhicule
+utilitaire vert non retenu en pleine image a été récupéré
+par le passage ROI véhicule comme \textit{truck} avec une
+confiance d'environ 0.39. Cette amélioration conserve les
+polygones actifs pour le comptage sans surcharger l'image
+finale avec des annotations inutiles.
+
+\begin{resultbox}{Validation H1}
+YOLO26n Step 3 960 atteint \textbf{0.792 mAP50}
+sur le split test, avec des scores très élevés pour
+\textit{car}, \textit{motorcycle} et
+\textit{emergency\_vehicle}. La classe
+\textit{person} reste la plus difficile, mais elle
+progresse avec la résolution 960 et les ROI.
+\textbf{H1 validée avec limite identifiée sur les
+petits piétons.}
+\end{resultbox}
+
+% ============================================================
+\section{Validation H2 — Apport du dataset final}
+
+\textbf{Hypothèse H2 :}
+\textit{la construction d'un dataset hybride, enrichi
+par des données locales, CityPersons et des crops de
+petits piétons, améliore la pertinence du modèle pour
+le contexte étudié.}
+
+Le dataset Step 3 final contient \textbf{6 761 images}
+et \textbf{23 096 instances person}. Il combine des
+images d'intersections Bellevue, des données locales
+marocaines, des images CityPersons et des crops dédiés
+aux petits piétons. Cette stratégie répond directement
+à la contrainte juridique du système : une meilleure
+couverture des personnes améliore la couverture
+d'anonymisation.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison YOLO26n Step 3 800 vs 960}
+\begin{tabularx}{\textwidth}{lcccc}
+\toprule
+\textbf{Modèle} &
+\textbf{mAP50} &
+\textbf{mAP50-95} &
+\textbf{R person} &
+\textbf{mAP50 person} \\
+\midrule
+YOLO26n Step 3 800 &
+0.775 & 0.563 & 0.291 & 0.450 \\
+YOLO26n Step 3 960 &
+\textbf{0.792} & \textbf{0.579} &
+\textbf{0.353} & \textbf{0.512} \\
+\bottomrule
+\end{tabularx}
+\label{tab:step3_800_960}
+\end{table}
+
+Le passage de 800 à 960 pixels améliore à la fois
+la performance globale et la classe \textit{person}.
+Le rappel \textit{person} progresse de \textbf{0.291}
+à \textbf{0.353}, et la mAP50 \textit{person} de
+\textbf{0.450} à \textbf{0.512}. Cette amélioration
+confirme que les petits objets bénéficient d'une
+résolution d'entrée plus élevée.
+
+\begin{resultbox}{Validation H2}
+Le dataset Step 3 et le fine-tuning 960 améliorent
+la robustesse du modèle, notamment sur les petits
+piétons. Le protocole final ne contient pas encore
+d'ablation stricte \textit{sans données locales /
+avec données locales}; l'hypothèse est donc
+\textbf{validée empiriquement sur le dataset final},
+avec une perspective d'ablation plus fine.
+\end{resultbox}
+
+% ============================================================
+\section{Validation H3 — Déploiement embarqué temps réel}
+
+\textbf{Hypothèse H3 :}
+\textit{le pipeline complet peut fonctionner sur un
+dispositif embarqué à ressources limitées avec une
+latence compatible avec la gestion du trafic.}
+
+Le benchmark Raspberry Pi 5 a montré que les variantes
+nano sont les seules compatibles avec le temps réel
+sur CPU ARM. Les variantes small dépassent le budget
+de calcul du Pi 5 et restent inférieures à 3 FPS.
+
+\begin{table}[H]
+\centering
+\caption{Résumé benchmark Raspberry Pi 5}
+\scriptsize
+\renewcommand{\arraystretch}{0.96}
+\begin{tabularx}{\textwidth}{lcccX}
+\toprule
+\textbf{Famille} &
+\textbf{Format} &
+\textbf{FPS} &
+\textbf{Taille} &
+\textbf{Interprétation} \\
+\midrule
+YOLO26n &
+FP32 &
+7.6 &
+9.8 MB &
+Meilleure vitesse parmi les variantes nano testées \\
+YOLO26n Step 3 960 + ROI &
+FP32 &
+2.16 &
+9.6 MB &
+Mode analyse haute précision, trop lent pour le temps réel \\
+YOLO26n Step 3 960 ROI pers. 10f &
+FP32 &
+2.48 &
+9.6 MB &
+Gain limité sans ROI véhicules \\
+YOLO26n Step 3 960 sans ROI &
+FP32 &
+2.51 &
+9.6 MB &
+Le coût principal reste l'inférence 960 \\
+YOLO26n Step 3 800 sans ROI &
+FP32 &
+3.94 &
+9.4 MB &
+Export 800 expérimental, plus rapide mais $<$5 FPS \\
+YOLO26n Step 3 800 ROI pers. 10f &
+FP32 &
+3.45 &
+9.4 MB &
+Anonymisation renforcée, encore $<$5 FPS \\
+YOLO26n Step 3 800 stride 2 &
+FP32 &
+4.28 &
+9.4 MB &
+7.84 frames source/s, meilleur compromis Step 3 \\
+YOLO26n Step 3 800 INT8 &
+INT8 dynamique &
+2.06 &
+2.8 MB &
+Modèle plus léger mais plus lent sur CPU ARM \\
+YOLOv11n &
+FP32 &
+5.9 &
+10.6 MB &
+Compatible temps réel, plus lent \\
+YOLOv8n &
+FP32 &
+5.3 &
+12.3 MB &
+Compatible temps réel, modèle plus lourd \\
+YOLO26s &
+FP32 &
+2.1 &
+38.2 MB &
+Incompatible temps réel sur Pi 5 \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1}
+\label{tab:rpi5_summary_results}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.98\textwidth,
+  height=7.2cm,
+  ymin=0,
+  ymax=8.6,
+  ylabel={FPS ou frames source/s},
+  symbolic x coords={
+    step960roi,
+    step960,
+    step800,
+    step800stride,
+    int8,
+    nano
+  },
+  xtick={
+    step960roi,
+    step960,
+    step800,
+    step800stride,
+    int8,
+    nano
+  },
+  xticklabels={
+    Step 3 960 ROI,
+    Step 3 960,
+    Step 3 800,
+    Step 3 800 stride 2,
+    Step 3 800 INT8,
+    YOLO26n nano
+  },
+  x tick label style={rotate=28, anchor=east, font=\scriptsize},
+  ymajorgrids=true,
+  grid style={LightGray},
+  bar width=13pt,
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+  legend style={
+    at={(0.5,1.03)},
+    anchor=south,
+    legend columns=3,
+    draw=none,
+    font=\scriptsize
+  },
+]
+\addplot[fill=PrimaryBlue!75, draw=PrimaryBlue]
+  coordinates {(step960roi,2.16) (step960,2.51) (step800,3.94) (int8,2.06) (nano,7.6)};
+\addlegendentry{FPS IA}
+\addplot[fill=AccentGreen!75, draw=AccentGreen]
+  coordinates {(step800stride,7.84)};
+\addlegendentry{Frames source/s}
+\draw[AccentOrange, dashed, very thick]
+  (axis cs:step960roi,5) -- (axis cs:nano,5);
+\addlegendimage{AccentOrange, dashed, very thick}
+\addlegendentry{Seuil 5 FPS}
+\end{axis}
+\end{tikzpicture}
+\caption{Comparaison visuelle du débit sur Raspberry Pi 5
+         \textit{(Source : auteur)}}
+\label{fig:rpi5_fps_comparison}
+\end{figure}
+
+La Figure~\ref{fig:rpi5_fps_comparison} rend explicite
+le compromis du déploiement. Le modèle YOLO26n nano
+reste la référence temps réel sur chaque frame. Le modèle
+Step 3 960 maximise la précision mais reste limité par
+l'inférence 960$\times$960. L'export 800 améliore le
+débit, et le mode \texttt{--vid-stride 2} dépasse le
+seuil de 5 FPS en couverture vidéo en analysant une
+frame source sur deux.
+
+\begin{table}[H]
+\centering
+\caption{Optimisations Step 3 800 sur Raspberry Pi 5}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Configuration} &
+\textbf{Frames src} &
+\textbf{Frames IA} &
+\textbf{FPS IA} &
+\textbf{FPS effectif} &
+\textbf{Latence} &
+\textbf{Anonymisés} &
+\textbf{Décision} \\
+\midrule
+ONNX 800 FP32, sans ROI, stride 1 &
+300 & 300 & 3.94 & 3.94 & 254 ms/frame & 1022 &
+Retenu si chaque frame doit être inférée \\
+ONNX 800 FP32, ROI personnes 10f, stride 1 &
+300 & 300 & 3.45 & 3.45 & 290 ms/frame & 1440 &
+Retenu pour anonymisation renforcée \\
+ONNX 800 FP32, sans ROI, stride 2 &
+300 & 150 & \textbf{4.28} & \textbf{7.84} & 234 ms/inférence & 541 &
+\textbf{Meilleur compromis FPS/couverture} \\
+ONNX 800 INT8 dynamique, sans ROI, stride 1 &
+300 & 300 & 2.06 & 2.06 & 485 ms/frame & 1140 &
+Non retenu \\
+ONNX 800 INT8 dynamique, sans ROI, stride 2 &
+300 & 150 & 1.97 & 3.76 & 508 ms/inférence & 617 &
+Non retenu \\
+\bottomrule
+\end{tabular}}
+\label{tab:step3_800_optimisations_pi5}
+\end{table}
+
+Le Tableau~\ref{tab:step3_800_optimisations_pi5}
+sépare deux mesures complémentaires. Le \textbf{FPS IA}
+mesure le débit réel des inférences exécutées par le
+modèle. Le \textbf{FPS effectif} mesure la couverture
+de la vidéo source lorsque le pipeline infère seulement
+une frame sur deux avec \texttt{--vid-stride 2}. Dans
+ce mode, l'export ONNX 800 FP32 atteint \textbf{7.84
+frames source/s}, ce qui dépasse le seuil de 5 FPS en
+couverture vidéo, mais sans analyser chaque frame. La
+quantification INT8 dynamique réduit la taille du modèle
+à 2.8 MB, mais elle n'est pas retenue car elle ralentit
+l'exécution sur Raspberry Pi 5 avec ONNX Runtime CPU.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {dashboard_complet}
+\caption{Dashboard complet : image analysée, KPIs,
+         phase MDP active et comptage par zone
+         \textit{(Source : auteur)}}
+\label{fig:dashboard}
+\end{figure}
+
+La Figure~\ref{fig:dashboard} illustre le fonctionnement
+du dashboard : image IA anonymisée, indicateurs
+opérationnels, phase active, durée de feu et statistiques
+par zone. Cette interface permet de vérifier le pipeline
+en conditions réelles et de capturer les preuves
+expérimentales utilisées dans ce chapitre.
+
+\begin{resultbox}{Validation H3}
+YOLO26n FP32 atteint \textbf{7.6 FPS réels} sur
+Raspberry Pi 5 dans la configuration nano benchmarkée,
+au-dessus du seuil minimal de 5 FPS. La variante
+Step 3 960 avec ROI atteint \textbf{2.16 FPS} :
+elle valide l'exécution embarquée du pipeline complet,
+mais doit être classée comme mode d'analyse plutôt
+que comme mode temps réel. Même sans ROI additionnelles,
+le modèle atteint seulement \textbf{2.51 FPS}, ce qui
+confirme que la version 960 reste un mode analyse.
+L'export 800 améliore le débit à \textbf{3.94 FPS}
+sans ROI et \textbf{3.45 FPS} avec ROI personnes,
+mais reste sous le seuil de 5 FPS lorsque toutes les
+frames sont inférées. Avec \texttt{--vid-stride 2}, il
+couvre \textbf{7.84 frames source/s}; cette optimisation
+dépasse le seuil de couverture vidéo au prix d'une
+inférence sur une frame source sur deux. L'INT8 dynamique
+a été testé mais non retenu, car il descend à
+\textbf{2.06 FPS}.
+\textbf{H3 est validée pour la famille YOLO26n nano
+et partiellement validée pour le pipeline complet
+Step 3.}
+\end{resultbox}
+
+% ============================================================
+\section{Validation H4 — Anonymisation Privacy-by-Design}
+
+\textbf{Hypothèse H4 :}
+\textit{l'anonymisation automatique des piétons détectés
+peut être intégrée au pipeline sans dégrader son
+fonctionnement global.}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+  \includegraphics[width=\textwidth]
+    {pipeline_screenshots/01_source_frame}
+  \caption{Frame originale}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+  \includegraphics[width=\textwidth]
+    {pipeline_screenshots/03_tracking_anonymisation}
+  \caption{Frame anonymisée}
+\end{subfigure}
+\caption{Anonymisation Privacy-by-Design :
+         floutage des piétons détectés
+         \textit{(Source : auteur)}}
+\label{fig:anonymisation_result}
+\end{figure}
+
+Le module M4 applique un floutage gaussien sur les
+boîtes de classe \textit{person} immédiatement après
+la détection. Le tracking et le comptage travaillent
+ensuite sur une frame déjà anonymisée, ce qui réduit
+la circulation de pixels identifiants dans les modules
+suivants.
+
+\begin{table}[H]
+\centering
+\caption{Contrôle expérimental du module d'anonymisation}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Critère} & \textbf{Résultat observé} \\
+\midrule
+Position dans le pipeline &
+Anonymisation appliquée après détection et avant tracking \\
+Classes concernées &
+Toutes les boîtes de classe \textit{person} transmises au module M4 \\
+Méthode finale &
+Floutage gaussien 51$\times$51, $\sigma=30$ \\
+Impact fonctionnel &
+Les tracks, zones et décisions MDP restent calculés normalement \\
+Limite &
+Une personne non détectée par YOLO ne peut pas être anonymisée \\
+\bottomrule
+\end{tabularx}
+\label{tab:controle_anonymisation}
+\end{table}
+
+\begin{warningbox}{Limite juridique résiduelle}
+L'anonymisation est garantie pour \textbf{100\% des
+boîtes \textit{person} détectées}. Elle ne peut pas
+garantir le floutage d'une personne que le détecteur
+n'a pas détectée. Cette limite explique l'effort
+spécifique sur CityPersons, les tiny crops et les ROI
+personnes.
+\end{warningbox}
+
+\begin{resultbox}{Validation H4}
+Le floutage gaussien 51$\times$51 est appliqué avant
+tracking sur toutes les détections \textit{person}.
+Le module respecte le principe Privacy-by-Design du
+pipeline, avec une limite explicitement documentée
+sur les personnes non détectées. \textbf{H4 validée
+avec risque résiduel maîtrisé.}
+\end{resultbox}
+
+% ============================================================
+\section{Validation H5 — Décision MDP}
+
+\textbf{Hypothèse H5 :}
+\textit{une politique de décision basée sur l'état
+courant de l'intersection permet de générer des phases
+de feux cohérentes et de prioriser les urgences.}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {decision_mdp}
+\caption{Sortie de décision MDP — phase active,
+         durée associée et scores par direction
+         \textit{(Source : auteur)}}
+\label{fig:mdp_decision}
+\end{figure}
+
+La décision MDP transforme les sorties de perception
+en scores par axe, puis sélectionne une phase de feu
+explicable : axe Nord-Sud, axe Est-Ouest, phase piéton,
+tout rouge ou urgence.
+
+\begin{table}[H]
+\centering
+\caption{Validation de la politique $\pi^*(s)$ —
+         cinq scénarios}
+\begin{tabularx}{\textwidth}{lXllc}
+\toprule
+\textbf{Scénario} &
+\textbf{État détecté} &
+\textbf{Phase attendue} &
+\textbf{Phase produite} &
+\textbf{Résultat} \\
+\midrule
+Dense Nord &
+$q_N=12$, $p=2$ &
+North-South 45s &
+North-South 45s &
+OK \\
+Équilibré &
+$q_{N/S/E/W}=4$ &
+North-South 30s &
+North-South 30s &
+OK \\
+Urgence Est &
+$e=1$ &
+Emergency 45s &
+Emergency 45s &
+OK \\
+Piétons seuls &
+$p=4$, $q<5$ &
+Pedestrian 30s &
+Pedestrian 30s &
+OK \\
+Aucun trafic &
+$q=0$, $p=0$ &
+All-Red 15s &
+All-Red 15s &
+OK \\
+\bottomrule
+\end{tabularx}
+\label{tab:validation_5scenarios}
+\end{table}
+
+\begin{resultbox}{Validation H5}
+La politique $\pi^*(s)$ produit la décision attendue
+sur les \textbf{5 scénarios} de validation : trafic
+dense Nord-Sud, trafic équilibré, urgence Est,
+piétons seuls et absence de trafic. La validation
+porte donc sur la cohérence logique du module MDP
+avec les états produits par le pipeline. \textbf{H5 validée.}
+\end{resultbox}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {pipeline_screenshots/00_pipeline_contact_sheet}
+\caption{Synthèse visuelle du pipeline expérimental :
+         acquisition, détection, anonymisation,
+         zones, décision et sortie finale
+         \textit{(Source : auteur)}}
+\label{fig:pipeline_contact_sheet}
+\end{figure}
+
+% ============================================================
+\section{Synthèse des résultats}
+
+\begin{table}[H]
+\centering
+\caption{Bilan de validation des hypothèses}
+\small
+\begin{tabularx}{\textwidth}{cX X X}
+\toprule
+\textbf{H} &
+\textbf{Hypothèse} &
+\textbf{Résultat clé} &
+\textbf{Statut} \\
+\midrule
+H1 &
+Détection &
+0.792 mAP50 test &
+Validée avec limite person \\
+H2 &
+Dataset final &
+6 761 images, gain person entre 800 et 960 &
+Validée empiriquement \\
+H3 &
+Edge embarqué &
+Nano : 7.6 FPS; Step 3 800 stride 2 : 7.84 frames source/s &
+Temps réel nano; Step 3 optimisé en couverture vidéo \\
+H4 &
+Protection données &
+Détections person floutées avant tracking &
+Validée avec risque résiduel \\
+H5 &
+Décision MDP &
+5 scénarios MDP OK &
+Validée \\
+\bottomrule
+\end{tabularx}
+\label{tab:bilan_hypotheses}
+\end{table}
+
+\section{Limites expérimentales}
+
+Les résultats obtenus valident la faisabilité du
+pipeline, mais plusieurs limites doivent être
+explicitement retenues pour l'interprétation
+scientifique :
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,height=0.18\textheight,keepaspectratio]
+    {pedestrian_173_jpg.rf.403d38c1e7abe1eeb789a1c163da5a7c}
+  \caption{Petits piétons}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,height=0.18\textheight,keepaspectratio]
+    {pipeline_screenshots/06_pipeline_final_overlay}
+  \caption{Ombres et occlusions}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,height=0.18\textheight,keepaspectratio]
+    {surveillance_youtube-1886_jpg.rf.0fb0019c63121b8ce04b730efd059c8b}
+  \caption{Scène dense}
+\end{subfigure}
+\caption{Exemples de limites et cas difficiles :
+         objets petits, occultés ou fortement éloignés
+         \textit{(Source : auteur)}}
+\label{fig:failure_cases}
+\end{figure}
+
+\begin{itemize}
+    \item le modèle Step 3 960 améliore la précision,
+    mais son exécution complète avec ROI atteint
+    2.16 FPS sur Raspberry Pi 5 ; même sans ROI
+    additionnelles, il atteint 2.51 FPS. L'export
+    800 monte à 3.94 FPS sans ROI et 3.45 FPS avec
+    ROI personnes lorsque toutes les frames sont inférées.
+    Le mode \texttt{--vid-stride 2} couvre 7.84 frames
+    source/s, mais n'infère qu'une frame sur deux ;
+    \item la quantification INT8 dynamique réduit la
+    taille de l'ONNX 800 de 9.4 MB à 2.8 MB, mais elle
+    ralentit le pipeline sur Raspberry Pi 5 avec ONNX
+    Runtime CPU et n'est donc pas retenue ;
+    \item la classe \textit{person} reste la plus
+    difficile, en particulier pour les piétons petits,
+    éloignés ou fortement occultés ;
+    \item les seuils de confiance et les ROI améliorent
+    certains cas qualitatifs, mais ils doivent être
+    calibrés selon la caméra et l'intersection ;
+    \item la validation MDP reste scénarisée :
+    un déploiement réel nécessiterait une collecte
+    terrain plus longue avec mesure directe des temps
+    d'attente, du débit et de la stabilité des phases.
+\end{itemize}
+
+\section*{Conclusion}
+\phantomsection
+\addcontentsline{toc}{section}{Conclusion}
+
+Les expérimentations confirment la faisabilité du
+pipeline Edge AI proposé : YOLO26n Step 3 960 apporte
+la meilleure précision, la famille YOLO26n nano reste
+compatible avec le Raspberry Pi 5 en configuration
+légère, l'anonymisation est intégrée avant le tracking,
+et la décision MDP produit des phases explicables et
+cohérentes. Les limites principales concernent la
+détection des petits piétons, les objets atypiques et
+le compromis précision/latence : Step 3 960 avec ROI
+atteint 2.16 FPS, monte seulement à 2.51 FPS sans ROI
+additionnelles, tandis que l'export 800 atteint
+3.94 FPS sans ROI. Le mode \texttt{--vid-stride 2}
+permet toutefois de couvrir 7.84 frames source/s avec
+l'ONNX 800 FP32, ce qui constitue le meilleur compromis
+embarqué obtenu pour Step 3. L'INT8 dynamique a été
+écarté car il réduit la taille du modèle mais dégrade
+le débit sur CPU ARM.

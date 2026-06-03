@@ -1,0 +1,120 @@
+{
+  "total_frames": 300,
+  "avg_fps": 2.16,
+  "avg_latency_ms": 463,
+  "total_anonymized": 2031,
+  "decisions_count": 300,
+  "emergency_count": 0,
+  "total_tracks": 585,
+  "benchmark": {
+    "device": "Raspberry Pi 5 8GB",
+    "runtime": "ONNX Runtime CPUExecutionProvider",
+    "model": "models/downloads/YOLO26n_step3_960_best.onnx",
+    "imgsz": 960,
+    "conf": 0.35,
+    "person_roi": true,
+    "vehicle_roi": true,
+    "dashboard": false,
+    "video": "data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4",
+    "mode": "analysis_precision"
+  },
+  "variants": [
+    {
+      "name": "full_roi",
+      "avg_fps": 2.16,
+      "avg_latency_ms": 463,
+      "person_roi": true,
+      "person_roi_every": 5,
+      "vehicle_roi": true,
+      "total_anonymized": 2031,
+      "total_tracks": 585
+    },
+    {
+      "name": "person_roi_every_10",
+      "avg_fps": 2.48,
+      "avg_latency_ms": 403,
+      "person_roi": true,
+      "person_roi_every": 10,
+      "vehicle_roi": false,
+      "total_anonymized": 1438,
+      "total_tracks": 311
+    },
+    {
+      "name": "no_roi",
+      "avg_fps": 2.51,
+      "avg_latency_ms": 398,
+      "person_roi": false,
+      "vehicle_roi": false,
+      "total_anonymized": 875,
+      "total_tracks": 190
+    },
+    {
+      "name": "onnx_800_from960_no_roi",
+      "model": "models/downloads/YOLO26n_step3_800_from960_best.onnx",
+      "imgsz": 800,
+      "avg_fps": 3.94,
+      "avg_latency_ms": 254,
+      "person_roi": false,
+      "vehicle_roi": false,
+      "total_anonymized": 1022,
+      "total_tracks": 199
+    },
+    {
+      "name": "onnx_800_from960_person_roi_every_10",
+      "model": "models/downloads/YOLO26n_step3_800_from960_best.onnx",
+      "imgsz": 800,
+      "avg_fps": 3.45,
+      "avg_latency_ms": 290,
+      "person_roi": true,
+      "person_roi_every": 10,
+      "vehicle_roi": false,
+      "total_anonymized": 1440,
+      "total_tracks": 290
+    },
+    {
+      "name": "onnx_800_from960_no_roi_vid_stride_2",
+      "model": "models/downloads/YOLO26n_step3_800_from960_best.onnx",
+      "imgsz": 800,
+      "vid_stride": 2,
+      "source_frames": 300,
+      "processed_frames": 150,
+      "avg_fps": 4.28,
+      "effective_source_fps": 7.84,
+      "avg_latency_ms": 234,
+      "person_roi": false,
+      "vehicle_roi": false,
+      "total_anonymized": 541,
+      "total_tracks": 132
+    },
+    {
+      "name": "onnx_800_int8_dynamic_no_roi",
+      "model": "models/downloads/YOLO26n_step3_800_from960_int8.onnx",
+      "imgsz": 800,
+      "vid_stride": 1,
+      "source_frames": 300,
+      "processed_frames": 300,
+      "avg_fps": 2.06,
+      "avg_latency_ms": 485,
+      "person_roi": false,
+      "vehicle_roi": false,
+      "total_anonymized": 1140,
+      "total_tracks": 210
+    },
+    {
+      "name": "onnx_800_int8_dynamic_no_roi_vid_stride_2",
+      "model": "models/downloads/YOLO26n_step3_800_from960_int8.onnx",
+      "imgsz": 800,
+      "vid_stride": 2,
+      "source_frames": 300,
+      "processed_frames": 150,
+      "avg_fps": 1.97,
+      "effective_source_fps": 3.76,
+      "avg_latency_ms": 508,
+      "person_roi": false,
+      "vehicle_roi": false,
+      "total_anonymized": 617,
+      "total_tracks": 138
+    }
+  ],
+  "interpretation": "Configuration Step 3 960 + ROI validee pour l'analyse haute precision. L'export ONNX 800 ameliore le FPS jusqu'a 3.94 sans stride. Avec vid_stride=2, le modele 800 FP32 couvre 7.84 frames source/s, ce qui depasse le seuil de 5 FPS en couverture video. L'INT8 dynamique a ete teste mais n'est pas retenu, car il est plus lent sur Raspberry Pi 5 avec ONNX Runtime CPU."
+}

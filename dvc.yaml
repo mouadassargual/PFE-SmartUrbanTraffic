@@ -1,0 +1,89 @@
+stages:
+  step1_no_leak_split:
+    desc: 'DataOps: split par groupes de vidéos pour éviter les fuites train/val/test.'
+    cmd: python3 scripts/create_no_leak_split.py
+    deps:
+    - data/dataset/dataset_clean_merged_bbox/data.yaml
+    - scripts/create_no_leak_split.py
+
+    frozen: true
+  step2_citypersons:
+    desc: 'DataOps: ajout de CityPersons uniquement dans train pour renforcer person
+      sans biaiser val/test.'
+    cmd: python3 scripts/add_citypersons_to_train.py
+    deps:
+    - data/dataset/Citypersons YOLOv8.zip
+    - data/dataset/dataset_step1_no_leak_split/data.yaml
+    - scripts/add_citypersons_to_train.py
+
+    frozen: true
+  step3_tiny_person_crops:
+    desc: 'DataOps: génération de crops pour tiny persons.'
+    cmd: python3 scripts/create_tiny_person_step3.py
+    deps:
+    - data/dataset/dataset_step2_citypersons_person/data.yaml
+    - scripts/create_tiny_person_step3.py
+
+    frozen: true
+  train_yolo26n_step3_960:
+    desc: 'MLOps: fine-tuning final exécuté sur Colab A100 et synchronisé dans models/downloads.'
+    cmd: echo "Run notebooks/train_yolo_colab_960.ipynb on Colab A100, then sync
+      final artifacts."
+    deps:
+    - notebooks/train_yolo_colab_960.ipynb
+    - data/dataset/dataset_step3_tiny_person_crops
+    params:
+    - training
+    outs:
+    - models/downloads/YOLO26n_step3_960_best.pt:
+        persist: true
+    - models/downloads/YOLO26n_step3_960_best.onnx:
+        persist: true
+    - models/downloads/YOLO26n_step3_960_results.csv:
+        persist: true
+    metrics:
+    - metrics/final_yolo26n_step3_960.json:
+        persist: true
+
+  export_yolo26n_step3_800_from960:
+    desc: 'MLOps: export ONNX 800 statique depuis les poids finaux Step 3 960 pour benchmark Pi.'
+    cmd: .venv/bin/python scripts/export_onnx_800.py
+    deps:
+    - scripts/export_onnx_800.py
+    - requirements-mlops.txt
+    - models/downloads/YOLO26n_step3_960_best.pt
+    params:
+    - experimental_exports.onnx_800_from_step3_960
+    outs:
+    - models/downloads/YOLO26n_step3_800_from960_best.onnx:
+        persist: true
+
+  quantize_yolo26n_step3_800_int8:
+    desc: 'MLOps: quantification INT8 expérimentale du ONNX 800 avec calibration vidéo.'
+    cmd: .venv/bin/python scripts/quantize_onnx_int8.py
+    deps:
+    - scripts/quantize_onnx_int8.py
+    - requirements-mlops.txt
+    - models/downloads/YOLO26n_step3_800_from960_best.onnx
+    - data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4
+    params:
+    - experimental_exports.onnx_800_int8
+    outs:
+    - models/downloads/YOLO26n_step3_800_from960_int8.onnx:
+        persist: true
+
+  log_mlflow_final:
+    desc: 'MLOps: journalisation locale des métriques finales dans MLflow.'
+    cmd: .venv/bin/python scripts/log_mlflow_final.py
+    deps:
+    - scripts/log_mlflow_final.py
+    - requirements-mlops.txt
+    - params.yaml
+    - metrics/final_yolo26n_step3_960.json
+    - models/downloads/YOLO26n_step3_800_from960_best.onnx
+    - models/downloads/YOLO26n_step3_800_from960_int8.onnx
+    params:
+    - training
+    - experimental_exports
+    - inference
+    - deployment

@@ -1,0 +1,223 @@
+% ============================================================
+% MÉMOIRE DE FIN D'ÉTUDES — MASTER 2 IA EMBARQUÉE
+% FSA Aït Melloul — Université Ibn Zohr — 2024/2025
+% ============================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+% ── Langues et polices ──────────────────────────────────────
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage[french]{babel}
+  \usepackage{lmodern}
+  \makeatletter
+  \providecommand{\xpg@aux}[2]{}
+  \makeatother
+\else
+  \usepackage{fontspec}
+  \usepackage{polyglossia}
+  \setmainlanguage{french}
+  \setotherlanguages{english,arabic}
+  \setmainfont{Latin Modern Roman}[
+    SmallCapsFont = {Latin Modern Roman Caps}
+  ]
+  \newfontfamily\arabicfont[Script=Arabic,Scale=1.08]{Amiri}
+\fi
+\usepackage{csquotes}
+
+% ── Mise en page ─────────────────────────────────────────────
+\usepackage[
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\hbadness=10000
+\hfuzz=20pt
+\emergencystretch=3em
+
+% ── Couleurs ─────────────────────────────────────────────────
+\usepackage[dvipsnames, table]{xcolor}
+
+% Palette couleurs du projet
+\definecolor{PrimaryBlue}  {RGB}{0,  82,  155}
+\definecolor{AccentGreen}  {RGB}{0,  150,  80}
+\definecolor{AccentOrange} {RGB}{220, 100,  0}
+\definecolor{LightGray}    {RGB}{245, 245, 245}
+\definecolor{DarkGray}     {RGB}{80,  80,  80}
+\definecolor{CodeBG}       {RGB}{248, 248, 248}
+
+% ── Graphiques et figures ─────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\graphicspath{{figures/}}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg,.jpeg}
+\setkeys{Gin}{keepaspectratio}
+\captionsetup[figure]{
+  font=small,
+  labelfont=bf,
+  justification=centering,
+  singlelinecheck=false
+}
+\captionsetup[table]{
+  font=small,
+  labelfont=bf,
+  justification=centering,
+  singlelinecheck=false
+}
+\captionsetup[subfigure]{
+  font=small,
+  labelfont=bf,
+  justification=centering,
+  singlelinecheck=false
+}
+
+% ── Blocs colorés ────────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings}
+
+% Bloc définition
+\newtcolorbox{definitionbox}[1]{
+  colback  = PrimaryBlue!8,
+  colframe = PrimaryBlue,
+  fonttitle= \bfseries\color{white},
+  title    = {#1},
+  arc      = 4pt
+}
+
+% Bloc résultat/contribution
+\newtcolorbox{resultbox}[1]{
+  colback  = AccentGreen!8,
+  colframe = AccentGreen,
+  fonttitle= \bfseries\color{white},
+  title    = {#1},
+  arc      = 4pt
+}
+
+% Bloc attention/limite
+\newtcolorbox{warningbox}[1]{
+  colback  = AccentOrange!8,
+  colframe = AccentOrange,
+  fonttitle= \bfseries\color{white},
+  title    = {#1},
+  arc      = 4pt
+}
+
+% ── Tableaux ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+
+% ── Diagrammes TikZ ──────────────────────────────────────────
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{
+  shapes.geometric,
+  arrows.meta,
+  positioning,
+  fit,
+  backgrounds,
+  shadows
+}
+
+% ── Algorithmes ───────────────────────────────────────────────
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% ── Code source ───────────────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  backgroundcolor = \color{CodeBG},
+  basicstyle      = \ttfamily\footnotesize,
+  keywordstyle    = \color{PrimaryBlue}\bfseries,
+  commentstyle    = \color{DarkGray}\itshape,
+  stringstyle     = \color{AccentGreen},
+  numbers         = left,
+  numberstyle     = \tiny\color{DarkGray},
+  frame           = single,
+  rulecolor       = \color{LightGray},
+  breaklines      = true,
+  showstringspaces= false,
+  tabsize         = 4
+}
+
+% ── Mathématiques ─────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── Liens et références ───────────────────────────────────────
+\usepackage[
+  colorlinks = true,
+  linkcolor  = PrimaryBlue,
+  citecolor  = AccentGreen,
+  urlcolor   = PrimaryBlue
+]{hyperref}
+\usepackage[french]{cleveref}
+
+% ── Bibliographie ─────────────────────────────────────────────
+\bibliographystyle{ieeetr}
+
+% ── En-têtes et pieds de page ─────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{16pt}
+
+% ── Chapitres stylisés ────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{PrimaryBlue}}
+  {\chaptertitlename\ \thechapter}
+  {20pt}
+  {\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{30pt}
+
+% ── Acronymes ─────────────────────────────────────────────────
+\usepackage{acronym}
+
+% ── Espacement paragraphes ───────────────────────────────────
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+
+% ── Pages préliminaires ──────────────────────────────────────
+\include{chapters/00_cover}
+\include{chapters/01_dedication}
+\include{chapters/02_acknowledgments}
+\include{chapters/03_abstract}
+
+% ── Tables ───────────────────────────────────────────────────
+\tableofcontents
+\listoffigures
+\listoftables
+
+% ── Chapitres ────────────────────────────────────────────────
+\include{chapters/ch1_introduction}
+\include{chapters/ch2_etat_art}
+\include{chapters/ch3_conception}
+\include{chapters/ch4_implementation}
+\include{chapters/ch5_resultats}
+\include{chapters/ch6_discussion}
+\include{chapters/ch7_conclusion}
+
+% ── Bibliographie ─────────────────────────────────────────────
+\bibliography{references}
+
+% ── Annexes ──────────────────────────────────────────────────
+\appendix
+\include{chapters/annexes}
+
+\end{document}

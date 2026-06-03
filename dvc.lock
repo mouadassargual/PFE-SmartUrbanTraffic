@@ -1,0 +1,226 @@
+schema: '2.0'
+stages:
+  log_mlflow_final:
+    cmd: .venv/bin/python scripts/log_mlflow_final.py
+    deps:
+    - path: metrics/final_yolo26n_step3_960.json
+      hash: md5
+      md5: 89352b094dd57591feb7879c31a789fa
+      size: 4567
+    - path: models/downloads/YOLO26n_step3_800_from960_best.onnx
+      hash: md5
+      md5: 25886580794b9246faf2cf9ef4354b51
+      size: 9903169
+    - path: models/downloads/YOLO26n_step3_800_from960_int8.onnx
+      hash: md5
+      md5: 3dc521d061684384297aaa264a569bf1
+      size: 2967608
+    - path: params.yaml
+      hash: md5
+      md5: f7ad93225440ce9d9c0d852328ca2fd0
+      size: 2868
+    - path: requirements-mlops.txt
+      hash: md5
+      md5: b8571f1d387da5b9b1baf8de94351556
+      size: 83
+    - path: scripts/log_mlflow_final.py
+      hash: md5
+      md5: 3ce46aac5093486550a8774622b5df97
+      size: 5944
+    params:
+      params.yaml:
+        deployment:
+          target: Raspberry Pi 5 8GB
+          runtime: ONNX Runtime
+          provider: CPUExecutionProvider
+          dashboard_port: 5000
+          benchmark_family_fps: 7.6
+          benchmark_family: YOLO26n nano FP32
+          step3_960_fps: 2.16
+          step3_960_latency_ms: 463
+          step3_960_frames: 300
+          step3_960_dashboard: false
+          step3_960_full_roi_fps: 2.16
+          step3_960_person_roi_every_10_fps: 2.48
+          step3_960_no_roi_fps: 2.51
+          step3_800_from960_no_roi_fps: 3.94
+          step3_800_from960_no_roi_latency_ms: 254
+          step3_800_from960_person_roi_every_10_fps: 3.45
+          step3_800_from960_person_roi_every_10_latency_ms: 290
+          step3_800_from960_no_roi_vid_stride_2_fps: 4.28
+          step3_800_from960_no_roi_vid_stride_2_effective_source_fps: 7.84
+          step3_800_from960_no_roi_vid_stride_2_latency_ms: 234
+          step3_800_int8_dynamic_no_roi_fps: 2.06
+          step3_800_int8_dynamic_no_roi_latency_ms: 485
+          step3_800_int8_dynamic_no_roi_vid_stride_2_fps: 1.97
+          step3_800_int8_dynamic_no_roi_vid_stride_2_effective_source_fps: 3.76
+          step3_800_int8_dynamic_no_roi_vid_stride_2_latency_ms: 508
+          step3_960_fps_status: confirmed_analysis_mode
+          step3_800_from960_fps_status: best_pi5_tradeoff_with_stride
+          step3_800_int8_dynamic_status: tested_not_retained_on_pi5_cpu
+        experimental_exports:
+          onnx_800_from_step3_960:
+            source_pt: models/downloads/YOLO26n_step3_960_best.pt
+            output_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+            imgsz: 800
+            opset: 12
+            simplify: true
+            status: exported_local_for_pi_benchmark
+          onnx_800_int8:
+            source_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+            output_onnx: models/downloads/YOLO26n_step3_800_from960_int8.onnx
+            method: dynamic
+            calibration_video: 
+              data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4
+            calibration_frames: 64
+            calibration_stride: 5
+            imgsz: 800
+            quant_format: dynamic
+            weight_type: QInt8
+            per_channel: false
+            status: exported_dynamic_int8_for_pi_benchmark
+        inference:
+          conf: 0.35
+          iou: 0.45
+          imgsz: 960
+          person_roi: true
+          person_roi_every: 5
+          person_roi_dedup_iou: 0.5
+          vehicle_roi: true
+          vehicle_roi_every: 5
+          vehicle_roi_padding: 24
+        training:
+          architecture: YOLO26n
+          start_weights: models/downloads/YOLO26n_step3_800_best.pt
+          final_pt: models/downloads/YOLO26n_step3_960_best.pt
+          local_final_pt_status: synced_local
+          final_onnx: models/downloads/YOLO26n_step3_960_best.onnx
+          imgsz: 960
+          epochs_planned: 40
+          epoch_best: 15
+          epoch_stopped: 25
+          batch_auto: 26
+          optimizer: AdamW
+          lr0: 0.0001
+          lrf: 0.1
+          mosaic: 0.1
+          close_mosaic: 5
+          seed: 42
+  train_yolo26n_step3_960:
+    cmd: echo "Run notebooks/train_yolo_colab_960.ipynb on Colab A100, then sync
+      final artifacts."
+    deps:
+    - path: data/dataset/dataset_step3_tiny_person_crops
+      hash: md5
+      md5: b1a478d30f842e6f9723c80f91962a64.dir
+      size: 1285586837
+      nfiles: 13526
+    - path: notebooks/train_yolo_colab_960.ipynb
+      hash: md5
+      md5: a9124823235986afbcaa3a9dd2e28a04
+      size: 11966
+    params:
+      params.yaml:
+        training:
+          architecture: YOLO26n
+          start_weights: models/downloads/YOLO26n_step3_800_best.pt
+          final_pt: models/downloads/YOLO26n_step3_960_best.pt
+          local_final_pt_status: synced_local
+          final_onnx: models/downloads/YOLO26n_step3_960_best.onnx
+          imgsz: 960
+          epochs_planned: 40
+          epoch_best: 15
+          epoch_stopped: 25
+          batch_auto: 26
+          optimizer: AdamW
+          lr0: 0.0001
+          lrf: 0.1
+          mosaic: 0.1
+          close_mosaic: 5
+          seed: 42
+    outs:
+    - path: metrics/final_yolo26n_step3_960.json
+      hash: md5
+      md5: 89352b094dd57591feb7879c31a789fa
+      size: 4567
+    - path: models/downloads/YOLO26n_step3_960_best.onnx
+      hash: md5
+      md5: 1c3cf1faf317940a0c31d9a3a5ceba5f
+      size: 10018700
+    - path: models/downloads/YOLO26n_step3_960_best.pt
+      hash: md5
+      md5: af85ac1ee26ee23f3fbed518fca4b3d0
+      size: 5453061
+    - path: models/downloads/YOLO26n_step3_960_results.csv
+      hash: md5
+      md5: 100c770710b706460edfdc5ffd898a03
+      size: 3305
+  export_yolo26n_step3_800_from960:
+    cmd: .venv/bin/python scripts/export_onnx_800.py
+    deps:
+    - path: models/downloads/YOLO26n_step3_960_best.pt
+      hash: md5
+      md5: af85ac1ee26ee23f3fbed518fca4b3d0
+      size: 5453061
+    - path: requirements-mlops.txt
+      hash: md5
+      md5: b8571f1d387da5b9b1baf8de94351556
+      size: 83
+    - path: scripts/export_onnx_800.py
+      hash: md5
+      md5: 183ec254bc38980d69a65d1630f704e8
+      size: 1492
+    params:
+      params.yaml:
+        experimental_exports.onnx_800_from_step3_960:
+          source_pt: models/downloads/YOLO26n_step3_960_best.pt
+          output_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+          imgsz: 800
+          opset: 12
+          simplify: true
+          status: exported_local_for_pi_benchmark
+    outs:
+    - path: models/downloads/YOLO26n_step3_800_from960_best.onnx
+      hash: md5
+      md5: 25886580794b9246faf2cf9ef4354b51
+      size: 9903169
+  quantize_yolo26n_step3_800_int8:
+    cmd: .venv/bin/python scripts/quantize_onnx_int8.py
+    deps:
+    - path: 
+        data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4
+      hash: md5
+      md5: b0eeb82f720caa12e3d44475a31bdf70
+      size: 28944457
+    - path: models/downloads/YOLO26n_step3_800_from960_best.onnx
+      hash: md5
+      md5: 25886580794b9246faf2cf9ef4354b51
+      size: 9903169
+    - path: requirements-mlops.txt
+      hash: md5
+      md5: b8571f1d387da5b9b1baf8de94351556
+      size: 83
+    - path: scripts/quantize_onnx_int8.py
+      hash: md5
+      md5: dd3e3b2ebbb1a5445fdd6ca9c7173201
+      size: 4273
+    params:
+      params.yaml:
+        experimental_exports.onnx_800_int8:
+          source_onnx: models/downloads/YOLO26n_step3_800_from960_best.onnx
+          output_onnx: models/downloads/YOLO26n_step3_800_from960_int8.onnx
+          method: dynamic
+          calibration_video: 
+            data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4
+          calibration_frames: 64
+          calibration_stride: 5
+          imgsz: 800
+          quant_format: dynamic
+          weight_type: QInt8
+          per_channel: false
+          status: exported_dynamic_int8_for_pi_benchmark
+    outs:
+    - path: models/downloads/YOLO26n_step3_800_from960_int8.onnx
+      hash: md5
+      md5: 3dc521d061684384297aaa264a569bf1
+      size: 2967608

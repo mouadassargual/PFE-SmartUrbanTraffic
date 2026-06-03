@@ -1,0 +1,66 @@
+# Python / environments
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# macOS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# DVC local cache
+.dvc/cache/
+.dvc/tmp/
+
+# Large datasets and videos stay outside Git.
+# Keep only DVC pointer files and source code.
+data/**
+!data/
+!data/dataset/
+!data/dataset/*.dvc
+!data/dataset/.gitignore
+*.mp4
+*.mov
+*.avi
+
+# Model weights / exports are tracked by DVC or documented in params/metrics.
+models/downloads/
+models/yolo26_weights_for_colab/
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.zip
+*.tar
+*.tar.gz
+
+# Local experiment tracking
+mlruns/
+mlflow.db
+
+# Generated/debug outputs
+results/*.zip
+results/*.tar.gz
+results/debug_*
+results/chapter5_screenshots/
+results/pipeline_screenshots/
+roi_step2_800_test.mp4
+dashboard.png
+
+# LaTeX build products
+rapport/*.aux
+rapport/*.bbl
+rapport/*.blg
+rapport/*.fdb_latexmk
+rapport/*.fls
+rapport/*.lof
+rapport/*.log
+rapport/*.lot
+rapport/*.out
+rapport/*.toc
+rapport/*.synctex.gz
+rapport/**/*.aux
+rapport/**/*.log
+rapport/tmp_render/

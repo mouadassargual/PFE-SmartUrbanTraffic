@@ -1,0 +1,6 @@
+outs:
+- md5: b1a478d30f842e6f9723c80f91962a64.dir
+  size: 1285586837
+  nfiles: 13526
+  hash: md5
+  path: dataset_step3_tiny_person_crops
