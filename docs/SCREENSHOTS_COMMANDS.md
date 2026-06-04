@@ -4,17 +4,38 @@ Ce fichier liste les captures réelles à prendre, les commandes à exécuter et
 noms de fichiers recommandés. Les captures doivent être placées dans
 `rapport/figures/`.
 
-## 1. DVC terminal
+## 1. DVC / DataOps snapshot
 
-Objectif : montrer la traçabilité DataOps du dataset et des métriques.
+Objectif : montrer la traçabilité DataOps sans utiliser une capture terminal trop
+dense. La meilleure capture est une vue VS Code avec les fichiers de traçabilité
+ouverts.
 
 Fichier recommandé :
 
 ```text
-rapport/figures/dvc_terminal.png
+rapport/figures/dvc_dataops_snapshot.png
 ```
 
-Commandes à afficher dans un terminal :
+Capture recommandée :
+
+1. Ouvrir VS Code à la racine du projet.
+2. Ouvrir côte à côte :
+   - `dvc.yaml`
+   - `dvc.lock`
+   - `params.yaml`
+   - `metrics/final_yolo26n_step3_960.json`
+3. Garder l'explorateur visible à gauche avec :
+   - `data/dataset/dataset_step3_tiny_person_crops.dvc`
+   - `scripts/run_dvc.sh`
+   - `metrics/`
+
+Capture macOS :
+
+```bash
+screencapture -i rapport/figures/dvc_dataops_snapshot.png
+```
+
+Commandes DVC à garder comme vérification, mais pas forcément à capturer :
 
 ```bash
 cd "/Users/mouadassargual/Desktop/Thesis Mouad"
@@ -23,18 +44,19 @@ scripts/run_dvc.sh dag
 scripts/run_dvc.sh metrics show
 ```
 
-Capture macOS :
+Si tu veux une deuxième capture très courte, capture seulement le DAG DVC :
 
 ```bash
-screencapture -i rapport/figures/dvc_terminal.png
+screencapture -i rapport/figures/dvc_dag_terminal.png
 ```
 
-À montrer dans l'image :
+À montrer dans la capture principale :
 
 - `dvc.yaml`
 - `dvc.lock`
+- `params.yaml`
 - `metrics/final_yolo26n_step3_960.json`
-- si possible le DAG DVC ou les métriques finales.
+- `data/dataset/dataset_step3_tiny_person_crops.dvc`
 
 ## 2. MLflow UI
 
@@ -50,9 +72,10 @@ Démarrer MLflow :
 
 ```bash
 cd "/Users/mouadassargual/Desktop/Thesis Mouad"
+.venv/bin/python scripts/log_mlflow_final.py
 .venv/bin/mlflow ui \
-  --backend-store-uri sqlite:///mlflow.db \
-  --default-artifact-root ./mlruns \
+  --backend-store-uri "sqlite:///$(pwd)/mlflow.db" \
+  --default-artifact-root "file://$(pwd)/mlruns" \
   --host 127.0.0.1 \
   --port 5056
 ```
@@ -61,6 +84,12 @@ Ouvrir :
 
 ```text
 http://127.0.0.1:5056
+```
+
+Lien direct vers l'expérience si la page d'accueil paraît vide :
+
+```text
+http://127.0.0.1:5056/#/experiments/1
 ```
 
 Capture macOS :
@@ -72,9 +101,17 @@ screencapture -i rapport/figures/mlflow_experiment_details.png
 À montrer dans l'image :
 
 - expérience `smart-traffic-agadir-yolo26n`
-- run final `YOLO26n-Step3-960-final-52b92829`
+- run final `YOLO26n-Step3-960-final-6582f915`
 - métriques `mAP`, `FPS`, `latency`
 - artefacts `.pt`, `.onnx`, `.csv`, `.json`.
+
+Si MLflow apparaît vide :
+
+- vérifier que la commande est lancée depuis la racine du projet ;
+- vérifier que l'option `--backend-store-uri "sqlite:///$(pwd)/mlflow.db"` est bien utilisée ;
+- ouvrir directement `http://127.0.0.1:5056/#/experiments/1` ;
+- relancer `scripts/log_mlflow_final.py` avant d'ouvrir l'UI ;
+- si un ancien serveur MLflow tourne déjà, utiliser un autre port, par exemple `5057`.
 
 ## 3. GitHub repository
 

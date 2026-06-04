@@ -72,8 +72,8 @@ Ouvrir l'interface MLflow :
 
 ```bash
 .venv/bin/mlflow ui \
-  --backend-store-uri sqlite:///mlflow.db \
-  --default-artifact-root ./mlruns \
+  --backend-store-uri "sqlite:///$(pwd)/mlflow.db" \
+  --default-artifact-root "file://$(pwd)/mlruns" \
   --host 127.0.0.1 \
   --port 5056
 ```
@@ -81,7 +81,7 @@ Ouvrir l'interface MLflow :
 Run final actuel :
 
 ```text
-YOLO26n-Step3-960-final-52b92829
+YOLO26n-Step3-960-final-6582f915
 ```
 
 ## Artefacts modèle
