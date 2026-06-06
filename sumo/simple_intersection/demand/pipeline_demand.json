@@ -1,0 +1,358 @@
+{
+  "source": "/Users/mouadassargual/Desktop/Thesis Mouad/results/pipeline_results.json",
+  "window_frames": 30,
+  "fps": 30.0,
+  "seconds_per_window": 30.0,
+  "windows": [
+    {
+      "window": 0,
+      "start_frame": 1,
+      "end_frame": 30,
+      "start_second": 0.0,
+      "end_second": 30.0,
+      "directions": {
+        "N": {
+          "mean_count": 7.1,
+          "max_count": 8,
+          "mean_score": 7.467,
+          "max_score": 9.0
+        },
+        "S": {
+          "mean_count": 0.633,
+          "max_count": 2,
+          "mean_score": 0.633,
+          "max_score": 2.0
+        },
+        "E": {
+          "mean_count": 1.7,
+          "max_count": 2,
+          "mean_score": 2.4,
+          "max_score": 3.0
+        },
+        "W": {
+          "mean_count": 5.067,
+          "max_count": 6,
+          "mean_score": 5.767,
+          "max_score": 7.0
+        }
+      },
+      "pedestrians_max": 12,
+      "emergency": false
+    },
+    {
+      "window": 1,
+      "start_frame": 31,
+      "end_frame": 60,
+      "start_second": 30.0,
+      "end_second": 60.0,
+      "directions": {
+        "N": {
+          "mean_count": 8.433,
+          "max_count": 10,
+          "mean_score": 9.1,
+          "max_score": 10.0
+        },
+        "S": {
+          "mean_count": 0.967,
+          "max_count": 2,
+          "mean_score": 0.967,
+          "max_score": 2.0
+        },
+        "E": {
+          "mean_count": 1.967,
+          "max_count": 3,
+          "mean_score": 2.767,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 6.567,
+          "max_count": 7,
+          "mean_score": 8.533,
+          "max_score": 9.0
+        }
+      },
+      "pedestrians_max": 12,
+      "emergency": false
+    },
+    {
+      "window": 2,
+      "start_frame": 61,
+      "end_frame": 90,
+      "start_second": 60.0,
+      "end_second": 90.0,
+      "directions": {
+        "N": {
+          "mean_count": 9.133,
+          "max_count": 11,
+          "mean_score": 10.267,
+          "max_score": 12.0
+        },
+        "S": {
+          "mean_count": 0,
+          "max_count": 0,
+          "mean_score": 0.0,
+          "max_score": 0.0
+        },
+        "E": {
+          "mean_count": 2.6,
+          "max_count": 3,
+          "mean_score": 3.4,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.767,
+          "max_count": 7,
+          "mean_score": 7.333,
+          "max_score": 9.0
+        }
+      },
+      "pedestrians_max": 10,
+      "emergency": false
+    },
+    {
+      "window": 3,
+      "start_frame": 91,
+      "end_frame": 120,
+      "start_second": 90.0,
+      "end_second": 120.0,
+      "directions": {
+        "N": {
+          "mean_count": 7.167,
+          "max_count": 9,
+          "mean_score": 7.267,
+          "max_score": 10.0
+        },
+        "S": {
+          "mean_count": 0.733,
+          "max_count": 2,
+          "mean_score": 0.733,
+          "max_score": 2.0
+        },
+        "E": {
+          "mean_count": 2.067,
+          "max_count": 3,
+          "mean_score": 2.867,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.933,
+          "max_count": 6,
+          "mean_score": 7.9,
+          "max_score": 8.0
+        }
+      },
+      "pedestrians_max": 8,
+      "emergency": false
+    },
+    {
+      "window": 4,
+      "start_frame": 121,
+      "end_frame": 150,
+      "start_second": 120.0,
+      "end_second": 150.0,
+      "directions": {
+        "N": {
+          "mean_count": 7.067,
+          "max_count": 8,
+          "mean_score": 7.4,
+          "max_score": 9.0
+        },
+        "S": {
+          "mean_count": 0.467,
+          "max_count": 1,
+          "mean_score": 0.467,
+          "max_score": 1.0
+        },
+        "E": {
+          "mean_count": 2.233,
+          "max_count": 3,
+          "mean_score": 3.033,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.867,
+          "max_count": 6,
+          "mean_score": 7.867,
+          "max_score": 8.0
+        }
+      },
+      "pedestrians_max": 9,
+      "emergency": false
+    },
+    {
+      "window": 5,
+      "start_frame": 151,
+      "end_frame": 180,
+      "start_second": 150.0,
+      "end_second": 180.0,
+      "directions": {
+        "N": {
+          "mean_count": 8.467,
+          "max_count": 12,
+          "mean_score": 8.833,
+          "max_score": 14.0
+        },
+        "S": {
+          "mean_count": 0.3,
+          "max_count": 1,
+          "mean_score": 0.3,
+          "max_score": 1.0
+        },
+        "E": {
+          "mean_count": 2.3,
+          "max_count": 3,
+          "mean_score": 3.1,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.833,
+          "max_count": 6,
+          "mean_score": 7.233,
+          "max_score": 8.0
+        }
+      },
+      "pedestrians_max": 7,
+      "emergency": false
+    },
+    {
+      "window": 6,
+      "start_frame": 181,
+      "end_frame": 210,
+      "start_second": 180.0,
+      "end_second": 210.0,
+      "directions": {
+        "N": {
+          "mean_count": 10.267,
+          "max_count": 12,
+          "mean_score": 11.033,
+          "max_score": 14.0
+        },
+        "S": {
+          "mean_count": 0.6,
+          "max_count": 1,
+          "mean_score": 0.6,
+          "max_score": 1.0
+        },
+        "E": {
+          "mean_count": 1.8,
+          "max_count": 2,
+          "mean_score": 2.6,
+          "max_score": 3.0
+        },
+        "W": {
+          "mean_count": 6.1,
+          "max_count": 7,
+          "mean_score": 7.767,
+          "max_score": 9.0
+        }
+      },
+      "pedestrians_max": 9,
+      "emergency": false
+    },
+    {
+      "window": 7,
+      "start_frame": 211,
+      "end_frame": 240,
+      "start_second": 210.0,
+      "end_second": 240.0,
+      "directions": {
+        "N": {
+          "mean_count": 9.6,
+          "max_count": 12,
+          "mean_score": 10.233,
+          "max_score": 13.0
+        },
+        "S": {
+          "mean_count": 0.433,
+          "max_count": 1,
+          "mean_score": 0.433,
+          "max_score": 1.0
+        },
+        "E": {
+          "mean_count": 1.8,
+          "max_count": 2,
+          "mean_score": 2.6,
+          "max_score": 3.0
+        },
+        "W": {
+          "mean_count": 5.667,
+          "max_count": 6,
+          "mean_score": 7.533,
+          "max_score": 8.0
+        }
+      },
+      "pedestrians_max": 8,
+      "emergency": false
+    },
+    {
+      "window": 8,
+      "start_frame": 241,
+      "end_frame": 270,
+      "start_second": 240.0,
+      "end_second": 270.0,
+      "directions": {
+        "N": {
+          "mean_count": 6.267,
+          "max_count": 10,
+          "mean_score": 6.333,
+          "max_score": 11.0
+        },
+        "S": {
+          "mean_count": 0.567,
+          "max_count": 1,
+          "mean_score": 0.567,
+          "max_score": 1.0
+        },
+        "E": {
+          "mean_count": 2.1,
+          "max_count": 3,
+          "mean_score": 2.9,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.6,
+          "max_count": 6,
+          "mean_score": 7.2,
+          "max_score": 8.0
+        }
+      },
+      "pedestrians_max": 10,
+      "emergency": false
+    },
+    {
+      "window": 9,
+      "start_frame": 271,
+      "end_frame": 300,
+      "start_second": 270.0,
+      "end_second": 300.0,
+      "directions": {
+        "N": {
+          "mean_count": 8.733,
+          "max_count": 10,
+          "mean_score": 9.733,
+          "max_score": 11.0
+        },
+        "S": {
+          "mean_count": 0.733,
+          "max_count": 2,
+          "mean_score": 0.733,
+          "max_score": 2.0
+        },
+        "E": {
+          "mean_count": 2.567,
+          "max_count": 3,
+          "mean_score": 3.367,
+          "max_score": 4.0
+        },
+        "W": {
+          "mean_count": 5.7,
+          "max_count": 7,
+          "mean_score": 7.267,
+          "max_score": 9.0
+        }
+      },
+      "pedestrians_max": 6,
+      "emergency": false
+    }
+  ]
+}

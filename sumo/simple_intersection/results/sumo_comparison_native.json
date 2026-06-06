@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "fixed_cycle": 30,
+    "idle_check_interval": 5,
+    "mdp_max_duration": null,
+    "max_steps": 600
+  },
+  "results": {
+    "fixed": {
+      "vehicles": 127,
+      "avg_waiting_time": 8.433,
+      "avg_time_loss": 15.151,
+      "avg_duration": 52.528,
+      "mode": "fixed",
+      "steps": 357,
+      "tripinfo": "/Users/mouadassargual/Desktop/Thesis Mouad/sumo/simple_intersection/results/fixed_native_tripinfo.xml",
+      "summary": "/Users/mouadassargual/Desktop/Thesis Mouad/sumo/simple_intersection/results/fixed_native_summary.xml"
+    },
+    "mdp": {
+      "vehicles": 127,
+      "avg_waiting_time": 11.827,
+      "avg_time_loss": 18.584,
+      "avg_duration": 55.913,
+      "mode": "mdp",
+      "steps": 367,
+      "tripinfo": "/Users/mouadassargual/Desktop/Thesis Mouad/sumo/simple_intersection/results/mdp_native_tripinfo.xml",
+      "summary": "/Users/mouadassargual/Desktop/Thesis Mouad/sumo/simple_intersection/results/mdp_native_summary.xml",
+      "decisions_csv": "/Users/mouadassargual/Desktop/Thesis Mouad/sumo/simple_intersection/results/mdp_native_decisions.csv"
+    }
+  },
+  "comparison": {
+    "fixed_avg_waiting_time": 8.433,
+    "mdp_avg_waiting_time": 11.827,
+    "waiting_time_reduction_pct": -40.25
+  }
+}

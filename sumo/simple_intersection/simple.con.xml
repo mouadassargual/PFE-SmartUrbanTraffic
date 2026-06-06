@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<connections>
+  <connection from="N_in" to="S_out" />
+  <connection from="S_in" to="N_out" />
+  <connection from="E_in" to="W_out" />
+  <connection from="W_in" to="E_out" />
+</connections>
