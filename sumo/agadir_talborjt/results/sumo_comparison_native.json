@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "fixed_cycle": 30,
+    "idle_check_interval": 5,
+    "mdp_max_duration": null,
+    "max_steps": 600
+  },
+  "results": {
+    "fixed": {
+      "vehicles": 127,
+      "avg_waiting_time": 7.551,
+      "avg_time_loss": 11.772,
+      "avg_duration": 24.48,
+      "mode": "fixed",
+      "steps": 327,
+      "tripinfo": "sumo/agadir_talborjt/results/fixed_native_tripinfo.xml",
+      "summary": "sumo/agadir_talborjt/results/fixed_native_summary.xml"
+    },
+    "mdp": {
+      "vehicles": 127,
+      "avg_waiting_time": 4.929,
+      "avg_time_loss": 7.693,
+      "avg_duration": 20.472,
+      "mode": "mdp",
+      "steps": 413,
+      "tripinfo": "sumo/agadir_talborjt/results/mdp_native_tripinfo.xml",
+      "summary": "sumo/agadir_talborjt/results/mdp_native_summary.xml",
+      "decisions_csv": "sumo/agadir_talborjt/results/mdp_native_decisions.csv"
+    }
+  },
+  "comparison": {
+    "fixed_avg_waiting_time": 7.551,
+    "mdp_avg_waiting_time": 4.929,
+    "waiting_time_reduction_pct": 34.72
+  }
+}

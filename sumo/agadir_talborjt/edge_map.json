@@ -1,0 +1,26 @@
+{
+  "tls_id": "cluster_13875345940_13875345941_13880325192_5153644277_#2more",
+  "note": "Approach labels for the Talborjt OSM scenario. They are simulation labels mapped to the four main incoming roads around the controlled junction.",
+  "directions": {
+    "N": {
+      "in": "-591072157#1",
+      "out": "666212794#1",
+      "route": "N_to_S"
+    },
+    "S": {
+      "in": "-28805336#0",
+      "out": "591072157#1",
+      "route": "S_to_N"
+    },
+    "E": {
+      "in": "180596058#2",
+      "out": "-440316493#2",
+      "route": "E_to_W"
+    },
+    "W": {
+      "in": "440316493#2",
+      "out": "-180596058#2",
+      "route": "W_to_E"
+    }
+  }
+}

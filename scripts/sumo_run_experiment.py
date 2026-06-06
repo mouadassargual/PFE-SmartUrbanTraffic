@@ -21,7 +21,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_DIR = ROOT / "sumo" / "simple_intersection"
 DIRECTIONS = ("N", "S", "E", "W")
-IN_EDGES = {"N": "N_in", "S": "S_in", "E": "E_in", "W": "W_in"}
+DEFAULT_EDGE_MAP = {
+    "tls_id": None,
+    "directions": {
+        "N": {"in": "N_in"},
+        "S": {"in": "S_in"},
+        "E": {"in": "E_in"},
+        "W": {"in": "W_in"},
+    },
+}
 
 
 def add_sumo_tools_to_path() -> None:
@@ -60,32 +68,48 @@ def sumo_binary(gui: bool) -> str:
     return binary
 
 
-def controlled_direction(link_group) -> str | None:
+def load_edge_map(path: Path | None) -> dict:
+    if path is None:
+        return DEFAULT_EDGE_MAP
+    if not path.exists():
+        raise SystemExit(f"Missing edge map: {path}")
+    data = json.loads(path.read_text())
+    if "directions" not in data:
+        data = {"tls_id": data.get("tls_id"), "directions": data}
+    for direction in DIRECTIONS:
+        if direction not in data["directions"] or "in" not in data["directions"][direction]:
+            raise SystemExit(f"Edge map missing input edge for direction {direction}: {path}")
+    return data
+
+
+def controlled_direction(link_group, edge_map: dict) -> str | None:
     if not link_group:
         return None
     incoming_lane = link_group[0][0]
     edge_id = incoming_lane.rsplit("_", 1)[0]
-    if edge_id.endswith("_in"):
-        return edge_id.split("_", 1)[0]
+    for direction, values in edge_map["directions"].items():
+        if edge_id == values["in"]:
+            return direction
     return None
 
 
-def tls_state(tls_id: str, green_dirs: list[str]) -> str:
+def tls_state(tls_id: str, green_dirs: list[str], edge_map: dict) -> str:
     allowed = set(green_dirs)
     chars = []
     for link_group in traci.trafficlight.getControlledLinks(tls_id):
-        direction = controlled_direction(link_group)
+        direction = controlled_direction(link_group, edge_map)
         chars.append("G" if direction in allowed else "r")
     return "".join(chars)
 
 
-def apply_phase(tls_id: str, green_dirs: list[str]) -> None:
-    traci.trafficlight.setRedYellowGreenState(tls_id, tls_state(tls_id, green_dirs))
+def apply_phase(tls_id: str, green_dirs: list[str], edge_map: dict) -> None:
+    traci.trafficlight.setRedYellowGreenState(tls_id, tls_state(tls_id, green_dirs, edge_map))
 
 
-def current_sumo_state() -> dict:
+def current_sumo_state(edge_map: dict) -> dict:
     state = {}
-    for direction, edge_id in IN_EDGES.items():
+    for direction, values in edge_map["directions"].items():
+        edge_id = values["in"]
         count = int(traci.edge.getLastStepVehicleNumber(edge_id))
         halted = int(traci.edge.getLastStepHaltingNumber(edge_id))
         score = float(count + halted)
@@ -136,11 +160,12 @@ def parse_tripinfo(path: Path) -> dict:
 
 
 def run_mode(args: argparse.Namespace, mode: str) -> dict:
-    cfg = args.scenario_dir / "simple.sumocfg"
+    cfg = args.cfg or (args.scenario_dir / "simple.sumocfg")
     if not cfg.exists():
         raise SystemExit(f"Missing SUMO config: {cfg}")
+    edge_map = load_edge_map(args.edge_map)
 
-    results_dir = args.scenario_dir / "results"
+    results_dir = args.results_dir or (cfg.parent / "results")
     results_dir.mkdir(parents=True, exist_ok=True)
     suffix = f"_{args.tag}" if args.tag else ""
     tripinfo = results_dir / f"{mode}{suffix}_tripinfo.xml"
@@ -166,7 +191,10 @@ def run_mode(args: argparse.Namespace, mode: str) -> dict:
     if not tls_ids:
         traci.close()
         raise SystemExit("No traffic light found in SUMO network.")
-    tls_id = tls_ids[0]
+    tls_id = args.tls_id or edge_map.get("tls_id") or tls_ids[0]
+    if tls_id not in tls_ids:
+        traci.close()
+        raise SystemExit(f"Traffic light '{tls_id}' not found. Available TLS: {list(tls_ids)}")
     mdp = MDPDecision() if mode == "mdp" else None
     decisions = []
 
@@ -174,17 +202,17 @@ def run_mode(args: argparse.Namespace, mode: str) -> dict:
         step = 0
         next_mdp_decision_step = 0
         current_green = ["N", "S"]
-        apply_phase(tls_id, current_green)
+        apply_phase(tls_id, current_green, edge_map)
 
         while step < args.max_steps and traci.simulation.getMinExpectedNumber() > 0:
             if mode == "fixed":
                 current_green = ["N", "S"] if (step // args.fixed_cycle) % 2 == 0 else ["E", "W"]
-                apply_phase(tls_id, current_green)
+                apply_phase(tls_id, current_green, edge_map)
             elif mode == "mdp" and step >= next_mdp_decision_step:
-                state = current_sumo_state()
+                state = current_sumo_state(edge_map)
                 decision = mdp.decide(state)
                 current_green = decision_green_dirs(decision)
-                apply_phase(tls_id, current_green)
+                apply_phase(tls_id, current_green, edge_map)
                 hold = mdp_hold_duration(decision, args)
                 next_mdp_decision_step = step + hold
                 decisions.append(
@@ -235,6 +263,10 @@ def comparison(fixed: dict, mdp: dict) -> dict:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run SUMO fixed vs MDP experiment")
     parser.add_argument("--scenario-dir", type=Path, default=SCENARIO_DIR)
+    parser.add_argument("--cfg", type=Path, default=None, help="SUMO .sumocfg; default simple scenario")
+    parser.add_argument("--edge-map", type=Path, default=None, help="JSON mapping N/S/E/W to SUMO input edges")
+    parser.add_argument("--tls-id", type=str, default=None, help="Traffic-light id to control")
+    parser.add_argument("--results-dir", type=Path, default=None)
     parser.add_argument("--mode", choices=["fixed", "mdp", "both"], default="both")
     parser.add_argument("--gui", action="store_true")
     parser.add_argument("--fixed-cycle", type=int, default=30)
@@ -268,7 +300,10 @@ def main() -> int:
         payload["comparison"] = comparison(results["fixed"], results["mdp"])
 
     suffix = f"_{args.tag}" if args.tag else ""
-    out_path = args.scenario_dir / "results" / f"sumo_comparison{suffix}.json"
+    cfg = args.cfg or (args.scenario_dir / "simple.sumocfg")
+    summary_dir = args.results_dir or (cfg.parent / "results")
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    out_path = summary_dir / f"sumo_comparison{suffix}.json"
     out_path.write_text(json.dumps(payload, indent=2))
 
     print("\nSUMO comparison")

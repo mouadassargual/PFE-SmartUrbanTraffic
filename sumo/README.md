@@ -45,7 +45,47 @@ export PYTHONPATH="$SUMO_HOME/tools:$PYTHONPATH"
 
 ## Using a real Agadir intersection
 
-Recommended workflow:
+The OSM extract `sumo/agadir_talborjt.osm` can be converted and tested with:
+
+```bash
+python3 scripts/sumo_build_agadir_talborjt.py
+python3 scripts/sumo_run_experiment.py \
+  --cfg sumo/agadir_talborjt/agadir.sumocfg \
+  --edge-map sumo/agadir_talborjt/edge_map.json \
+  --results-dir sumo/agadir_talborjt/results \
+  --mode both \
+  --tag native
+python3 scripts/sumo_run_experiment.py \
+  --cfg sumo/agadir_talborjt/agadir.sumocfg \
+  --edge-map sumo/agadir_talborjt/edge_map.json \
+  --results-dir sumo/agadir_talborjt/results \
+  --mode both \
+  --mdp-max-duration 30 \
+  --tag mdp30
+```
+
+The controlled traffic-light node is:
+
+```text
+cluster_13875345940_13875345941_13880325192_5153644277_#2more
+```
+
+The approach labels `N/S/E/W` are simulation labels mapped in
+`sumo/agadir_talborjt/edge_map.json`.
+
+Current Talborjt result with 127 vehicles generated from `pipeline_results.json`:
+
+```text
+Fixed 30s cycles : 7.551 s average waiting time
+MDP native       : 4.929 s average waiting time
+Reduction        : 34.72 %
+```
+
+The `--mdp-max-duration 30` sensitivity run gives the same value on this
+scenario because the decisions already hold 15 s or 30 s in the observed
+traffic states.
+
+For a fresh OSM extraction, the recommended workflow remains:
 
 1. Launch the SUMO OpenStreetMap wizard:
 
