@@ -1,6 +1,6 @@
 {
   "tls_id": "cluster_13875345940_13875345941_13880325192_5153644277_#2more",
-  "note": "Approach labels for the Talborjt OSM scenario. They are simulation labels mapped to the four main incoming roads around the controlled junction.",
+  "note": "Verify these edge IDs visually in sumo-gui on Windows. If they differ, edit them and rerun scripts\\sumo_prepare_windows_talborjt.py.",
   "directions": {
     "N": {
       "in": "-591072157#1",

@@ -5,10 +5,9 @@ This branch contains the SUMO testbed used to compare:
 1. fixed traffic lights: 30 s North/South, then 30 s East/West;
 2. the project MDP controller from `pipeline/decision.py`.
 
-The first scenario is a minimal four-way intersection so the full chain can be
-tested immediately. The same controller can then be reused on a real OpenStreetMap
-intersection from Agadir, for example Tablorjt, after importing and cleaning the
-network in SUMO/NetEdit.
+The first scenario is a minimal four-way intersection used only as a software
+testbed. The real Talborjt validation must be executed on the Windows PC with
+SUMO installed.
 
 ## Immediate reproducible test
 
@@ -36,70 +35,44 @@ sumo/simple_intersection/results/sumo_comparison_native.json
 sumo/simple_intersection/results/sumo_comparison_mdp30.json
 ```
 
-If TraCI is not found, run:
-
-```bash
-export SUMO_HOME=/opt/homebrew/share/sumo
-export PYTHONPATH="$SUMO_HOME/tools:$PYTHONPATH"
-```
+This simple scenario is not the final report evidence.
 
 ## Using a real Agadir intersection
 
-The OSM extract `sumo/agadir_talborjt.osm` can be converted and tested with:
+Use the Windows workflow in:
 
-```bash
-python3 scripts/sumo_build_agadir_talborjt.py
-python3 scripts/sumo_run_experiment.py \
-  --cfg sumo/agadir_talborjt/agadir.sumocfg \
-  --edge-map sumo/agadir_talborjt/edge_map.json \
-  --results-dir sumo/agadir_talborjt/results \
-  --mode both \
-  --tag native
-python3 scripts/sumo_run_experiment.py \
-  --cfg sumo/agadir_talborjt/agadir.sumocfg \
-  --edge-map sumo/agadir_talborjt/edge_map.json \
-  --results-dir sumo/agadir_talborjt/results \
-  --mode both \
-  --mdp-max-duration 30 \
-  --tag mdp30
+```text
+sumo/windows_talborjt/README_WINDOWS.md
 ```
 
-The controlled traffic-light node is:
+Main Windows commands:
+
+```bat
+set SUMO_HOME=C:\Program Files (x86)\Eclipse\Sumo
+set PATH=%SUMO_HOME%\bin;%PATH%
+set PYTHONPATH=%SUMO_HOME%\tools;%PYTHONPATH%
+python scripts\sumo_prepare_windows_talborjt.py
+cd sumo\windows_talborjt
+sumo -c agadir_fixed.sumocfg
+python sumo_mdp_control.py
+python analyze_results.py
+```
+
+The controlled traffic-light node prepared for Talborjt is:
 
 ```text
 cluster_13875345940_13875345941_13880325192_5153644277_#2more
 ```
 
-The approach labels `N/S/E/W` are simulation labels mapped in
-`sumo/agadir_talborjt/edge_map.json`.
-
-Current Talborjt result with 127 vehicles generated from `pipeline_results.json`:
+The approach labels `N/S/E/W` are simulation labels mapped in:
 
 ```text
-Fixed 30s cycles : 7.551 s average waiting time
-MDP native       : 4.929 s average waiting time
-Reduction        : 34.72 %
+sumo/windows_talborjt/edge_map_windows.json
 ```
 
-The `--mdp-max-duration 30` sensitivity run gives the same value on this
-scenario because the decisions already hold 15 s or 30 s in the observed
-traffic states.
-
-For a fresh OSM extraction, the recommended workflow remains:
-
-1. Launch the SUMO OpenStreetMap wizard:
-
-   ```bash
-   python3 /opt/homebrew/share/sumo/tools/osmWebWizard.py
-   ```
-
-2. Select a small bounding box around the target intersection, for example
-   Tablorjt in Agadir.
-3. Export the SUMO network.
-4. Open it in NetEdit and verify lanes, allowed movements and traffic-light
-   phases.
-5. Reuse `scripts/sumo_run_experiment.py` with the cleaned `.sumocfg`, or adapt
-   the `IN_EDGES` mapping in the script to the real OSM edge IDs.
+The final report should use the Windows-produced `tripinfo_fixed.xml`,
+`tripinfo_mdp.xml`, terminal output, and screenshots. Do not use local draft
+results as final evidence.
 
 ## Academic interpretation
 
@@ -109,8 +82,8 @@ The simple scenario validates the software link:
 pipeline_results.json -> SUMO demand -> fixed lights vs MDP via TraCI
 ```
 
-The final report should only claim "real geometry of Tablorjt" after the OSM
-network has actually been imported, cleaned and used for the measurements.
+The final report should only claim "real geometry of Talborjt" after the OSM
+network has been imported and simulated on the Windows PC.
 
 The simple generated intersection is a calibration test, not final evidence for
 Tablorjt. If native MDP durations perform worse than fixed cycles, keep that
