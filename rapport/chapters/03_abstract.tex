@@ -46,16 +46,12 @@ FP32} atteint \textbf{7,6 FPS réels} sur Pi 5 — meilleur
 compromis vitesse/taille parmi les douze configurations
 testées. Les variantes small sont empiriquement confirmées
 incompatibles avec le temps réel (moins de 3 FPS).
-Le modèle final \textbf{YOLO26n Step 3 960} atteint
-\textbf{0,792 mAP50} et \textbf{0,579 mAP50-95}
-sur le split test.
 
-La politique MDP a été validée sur cinq scénarios
-représentatifs couvrant trafic dense Nord-Sud,
-trafic Est-Ouest, urgence, piétons et absence de
-trafic. Dans chaque cas, la phase produite correspond
-à la phase attendue.
-Les cinq hypothèses de recherche sont confirmées,
+La politique MDP validée sur simulation SUMO démontre
+une réduction du temps d'attente moyen de
+\textbf{$-51\%$ à $-93\%$} selon le scénario,
+par rapport aux feux à cycles fixes.
+Les quatre hypothèses de recherche sont confirmées,
 démontrant la viabilité d'un pipeline complet
 d'intelligence artificielle embarquée pour la gestion
 intelligente du trafic urbain, ouvrant la voie à des
@@ -119,16 +115,12 @@ empirically confirms that \textbf{YOLO26n FP32} achieves
 trade-off among the twelve tested configurations.
 Small variants are empirically confirmed incompatible
 with real-time processing (below 3 FPS on Pi 5).
-The final \textbf{YOLO26n Step 3 960} model reaches
-\textbf{0.792 mAP50} and \textbf{0.579 mAP50-95}
-on the test split.
 
-The MDP policy was validated on five representative
-scenarios covering dense North-South traffic,
-East-West traffic, emergency priority, pedestrian
-priority, and no-traffic conditions. In every case,
-the produced phase matches the expected phase.
-All five research hypotheses are confirmed, demonstrating
+The MDP policy validated on SUMO simulation demonstrates
+a reduction in average waiting time of
+\textbf{$-51\%$ to $-93\%$} depending on the scenario,
+compared to fixed-cycle traffic lights.
+All four research hypotheses are confirmed, demonstrating
 the viability of a complete embedded AI pipeline for
 intelligent urban traffic management, paving the way
 for real deployments in Moroccan smart cities.
@@ -205,19 +197,13 @@ Law 09-08, Bellevue Traffic Dataset.
 \textbf{\LR{7.6} إطار في الثانية}،
 أفضل توازن بين السرعة والحجم
 من بين اثنتي عشرة تكويناً مختبراً.
-كما حقق النموذج النهائي
-\LR{YOLO26n Step 3 960}
-\textbf{\LR{0.792 mAP50}}
-على مجموعة الاختبار.
 
-تم التحقق من سياسة \LR{MDP}
-عبر خمسة سيناريوهات ممثلة تشمل
-ازدحام محور الشمال-الجنوب،
-وحركة الشرق-الغرب، والأولوية لحالة
-الطوارئ، وأولوية المشاة، وحالة عدم
-وجود حركة مرور. في كل حالة كانت
-المرحلة المنتجة مطابقة للمرحلة المتوقعة.
-تم التحقق من الفرضيات الخمس للبحث،
+أثبتت سياسة \LR{MDP} المُتحقق منها
+عبر محاكاة \LR{SUMO} تخفيضاً
+في متوسط وقت الانتظار من
+\textbf{\LR{51\%}-} إلى \textbf{\LR{93\%}-}
+مقارنةً بإشارات المرور ذات الدورات الثابتة.
+تم التحقق من الفرضيات الأربع للبحث،
 مما يُثبت جدوى خط معالجة متكامل
 للذكاء الاصطناعي المدمج لإدارة
 حركة المرور الحضرية بذكاء،

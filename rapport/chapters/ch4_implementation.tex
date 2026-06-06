@@ -1,132 +1,183 @@
 \chapter{Implémentation}
 \label{ch:implementation}
-% ============================================================
-% Section 4.X — Construction du Dataset
-% ============================================================
-
 
 \section{Construction du dataset d'entraînement}
 
-\subsection{Problématique et objectifs}
+\subsection{Le problème des données disponibles}
 
-La constitution d'un dataset adapté à notre
-contexte a représenté l'un des défis majeurs
-de ce travail. Notre système requiert la
-détection fiable de six classes dans des
-scènes de surveillance urbaine :
-\textbf{bus, car, emergency\_vehicle,
-motorcycle, person et truck}.
+Trouver un dataset adapté à ce projet
+n'a pas été simple. Le système requiert
+la détection fiable de six classes dans
+des scènes de surveillance d'intersection
+urbaine — bus, car, emergency\_vehicle,
+motorcycle, person et truck — avec un
+angle de caméra fixe, entre 30 et 60
+degrés par rapport au sol, comme dans
+les installations réelles aux carrefours.
 
-Deux contraintes spécifiques ont guidé
-la construction :
+En explorant les datasets publics disponibles,
+trois problèmes se sont posés successivement.
 
-\begin{itemize}
-    \item \textbf{Contrainte Privacy-by-Design :}
-    la classe \textit{person} doit être détectée
-    avec une précision maximale, car tout piéton
-    non détecté échappe à l'anonymisation
-    obligatoire au titre de la Loi 09-08.
+Le premier est l'absence totale de données
+marocaines. Aucun dataset public ne représente
+le contexte urbain marocain avec nos six
+classes. C'est une limite documentée dans
+la littérature sur les systèmes de trafic
+en Afrique — les données existent surtout
+pour l'Europe, l'Asie et l'Amérique du Nord.
+Cela signifiait qu'un modèle entraîné sur
+des données existantes pourrait ne pas
+généraliser correctement aux conditions
+visuelles locales : luminosité, densité
+de deux-roues, type de véhicules.
 
-    \item \textbf{Contrainte embarquée :}
-    le dataset doit produire un modèle
-    suffisamment léger pour s'exécuter
-    en temps réel sur Raspberry Pi 5.
-\end{itemize}
+Le deuxième problème concerne l'angle de
+vue. VisDrone est l'un des datasets les plus
+utilisés pour la détection d'objets en milieu
+urbain. Il contient de nombreux objets petits,
+ce qui semblait pertinent pour notre cas.
+Mais après analyse de sa structure et de ses
+exemples, il est apparu clairement que ses
+images sont prises depuis un drone en vue
+quasi-verticale, à 90 degrés. Les objets y
+sont minuscules et indifférenciés — les scores
+de rappel sur person et motorcycle y sont
+respectivement de 36.5\% et 29.6\%, ce qui
+est insuffisant pour notre usage. L'angle
+d'une caméra de surveillance fixe à
+45 degrés est fondamentalement différent :
+les véhicules sont vus de face ou de
+trois-quarts, avec une perspective qui
+change la forme des boîtes englobantes.
+VisDrone a donc été écarté à l'analyse,
+avant tout entraînement.
 
-\subsection{Sources et composition}
+Le troisième problème vient de la géométrie
+des intersections. La majorité des datasets
+disponibles provient d'intersections à double
+voie, ce qui rend difficile la délimitation
+claire des zones directionnelles Nord, Sud,
+Est, Ouest. Sans zones bien définies, le
+comptage par zone — qui alimente directement
+le module M5 — devient imprécis ou impossible.
 
-Quatre sources ont été sélectionnées selon
-un critère strict de compatibilité avec
-les conditions de surveillance urbaine :
+Face à ces trois contraintes, la seule
+solution était de construire un dataset
+hybride à partir de sources sélectionnées
+pour leur compatibilité avec nos conditions.
+
+\subsection{Sources retenues}
+
+Quatre sources ont été combinées, chacune
+choisie pour combler un manque spécifique :
 
 \begin{table}[H]
 \centering
 \caption{Sources du dataset final}
-\begin{tabularx}{\textwidth}{lXc}
+\begin{tabularx}{\textwidth}{lXl}
 \toprule
 \textbf{Source} &
-\textbf{Contenu} &
+\textbf{Contenu et rôle} &
 \textbf{Classes} \\
 \midrule
 Bellevue Traffic Dataset &
-Vidéos d'intersections urbaines,
-caméras fixes, angle surveillance &
+Vidéos d'intersections urbaines
+filmées par caméras fixes, angle
+de surveillance réel. Source
+principale de données véhicules. &
 Toutes \\
-Lqliaa — Agadir (terrain) &
-Images collectées localement,
-contexte marocain &
+
+Lqliaa — Agadir &
+Vidéos filmées localement avec
+un drone DJI Mini 2 depuis une
+hauteur contrôlée, annotées pour
+représenter le contexte marocain. &
 Toutes \\
+
 Emergency Vehicles &
-Véhicules d'urgence en circulation &
+Images de véhicules d'urgence
+en circulation, pour compenser
+la rareté de cette classe. &
 emergency\_vehicle \\
+
 CityPersons &
 Piétons en milieu urbain,
-18 villes, tailles variées &
+18 villes, tailles variées.
+Ajouté pour renforcer la classe
+person, doublement critique pour
+la décision MDP et l'anonymisation. &
 person \\
 \bottomrule
 \end{tabularx}
 \label{tab:dataset_sources}
 \end{table}
 
-L'ordre officiel des classes respecte
-la convention Roboflow utilisée lors
-de l'annotation :
+L'ordre des classes respecte la convention
+Roboflow utilisée lors de l'annotation :
 
 \begin{center}
 \texttt{bus (0) · car (1) ·
 emergency\_vehicle (2) ·
-motorcycle (3) · person (4) · truck (5)}
+motorcycle (3) · person (4) ·
+truck (5)}
 \end{center}
 
 \begin{figure}[H]
 \centering
 \begin{subfigure}{0.48\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{dataset_bellevue}
-  \caption{Bellevue}
+  \includegraphics[width=\textwidth]
+    {dataset_bellevue}
+  \caption{Bellevue — intersection
+           caméra fixe}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.48\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{dataset_lqliaa}
-  \caption{Lqliaa/Agadir}
+  \includegraphics[width=\textwidth]
+    {dataset_lqliaa}
+  \caption{Lqliaa — contexte marocain}
 \end{subfigure}
-\caption{Exemples de scènes intégrées au dataset final
+\caption{Exemples de scènes du dataset final
          \textit{(Source : auteur)}}
 \label{fig:dataset_sources_visual}
 \end{figure}
 
-La Figure~\ref{fig:dataset_sources_visual} illustre
-la complémentarité des sources : Bellevue apporte des
-intersections urbaines fixes avec une forte densité de
-véhicules, tandis que les images locales ajoutent le
-contexte visuel marocain nécessaire à la généralisation
-du prototype.
+Bellevue apporte la densité de véhicules
+et la géométrie d'intersection compatible
+avec nos zones. Les images de Lqliaa
+ajoutent le contexte visuel marocain :
+luminosité différente, types de véhicules
+locaux, densité de motos. Les deux sources
+sont complémentaires.
 
 \subsection{Méthodologie de construction
             en trois étapes}
 
-La construction du dataset a suivi une
-méthodologie rigoureuse en trois étapes
-successives, chacune répondant à un
-problème empiriquement identifié.
+La construction a suivi une progression
+en trois étapes, chacune répondant à
+un problème identifié sur les données
+précédentes.
 
 \subsubsection{Étape 1 — Split sans fuite
                de données}
 
 Les images étant extraites de vidéos,
-des frames proches d'une même séquence
-peuvent se retrouver simultanément dans
-les ensembles d'entraînement et de test.
-Ce phénomène produit des métriques
-artificiellement élevées, car le modèle
-a vu des frames quasi-identiques pendant
-l'entraînement.
+des frames consécutives d'une même
+séquence peuvent se retrouver à la fois
+dans le train et dans le test. Si c'est
+le cas, le modèle a vu pendant
+l'entraînement des frames quasi-identiques
+à celles qu'on utilise pour l'évaluer —
+les métriques semblent bonnes, mais elles
+ne reflètent pas la vraie capacité de
+généralisation.
 
-Pour éviter ce biais, un split par
-\textbf{groupes de source} a été appliqué :
-toutes les frames extraites d'une même
-vidéo appartiennent au même split.
+Pour éviter ça, le split a été fait par
+groupe de source : toutes les frames
+extraites d'une même vidéo vont dans
+le même split. La vérification confirme
+\texttt{0 group(s) found in multiple splits}.
 
 \begin{table}[H]
 \centering
@@ -143,47 +194,55 @@ vidéo appartiennent au même split.
 \textbf{person} &
 \textbf{truck} \\
 \midrule
-Train & 2716 & 407 & 19268 & 286 & 4358 & 2075 & 1341 \\
-Val   & 779  & 117 & 5486  & 83  & 1241 & 507  & 384  \\
-Test  & 393  & 62  & 2742  & 42  & 622  & 309  & 200  \\
+Train & 2716 & 407 & 19268 & 286 &
+4358 & 2075 & 1341 \\
+Val   & 779  & 117 & 5486  & 83  &
+1241 & 507  & 384  \\
+Test  & 393  & 62  & 2742  & 42  &
+622  & 309  & 200  \\
 \midrule
 \textbf{Total} & \textbf{3888} &
-586 & 27496 & 411 & 6221 & 2891 & 1925 \\
+586 & 27496 & 411 &
+6221 & 2891 & 1925 \\
 \bottomrule
 \end{tabularx}
 \label{tab:step1}
 \end{table}
 
-La vérification du split confirme :
-\texttt{0 group(s) found in multiple splits},
-garantissant l'absence de fuite de données.
-
 \subsubsection{Étape 2 — Renforcement
                de la classe person}
 
-La classe \textit{person} était sous-représentée
-dans les données de surveillance (2 075 instances
-en train). Or, cette classe est doublement critique :
-détecter les piétons pour la décision MDP, et
-les anonymiser pour la conformité Loi 09-08.
+Avec 2 075 instances person en train,
+la classe était sous-représentée par
+rapport à car (19 268 instances). C'est
+un problème doublement critique dans
+notre système : la détection des piétons
+alimente à la fois la décision MDP et
+l'anonymisation Privacy-by-Design. Un
+piéton non détecté n'est pas anonymisé
+— ce qui constitue une violation de la
+Loi 09-08.
 
-Le dataset \textbf{CityPersons} (18 villes,
-piétons de tailles variées) a été intégré
-\textbf{exclusivement dans l'ensemble
-d'entraînement} afin de ne pas biaiser
-l'évaluation sur val et test.
+CityPersons a été intégré exclusivement
+dans l'ensemble d'entraînement. Ajouter
+des données de renforcement dans val
+ou test biaiserait l'évaluation en
+faveur des classes renforcées.
 
 \begin{table}[H]
 \centering
 \caption{Ajout CityPersons — Étape 2}
 \begin{tabularx}{\textwidth}{lcc}
 \toprule
-\textbf{Métrique} & \textbf{Avant} & \textbf{Après} \\
+\textbf{Métrique} &
+\textbf{Avant} &
+\textbf{Après} \\
 \midrule
-Images train         & 2716  & 5058   \\
-Instances person (train) & 2075 & 20652 \\
-Villes représentées  & —     & 18     \\
-Val/Test             & inchangés & inchangés \\
+Images train & 2716 & 5058 \\
+Instances person (train) &
+2075 & 20652 \\
+Villes représentées & — & 18 \\
+Val/Test & inchangés & inchangés \\
 \bottomrule
 \end{tabularx}
 \label{tab:step2}
@@ -192,22 +251,30 @@ Val/Test             & inchangés & inchangés \\
 \subsubsection{Étape 3 — Crops pour
                tiny persons}
 
-Dans les vidéos de surveillance d'intersections,
-les piétons sont fréquemment très petits dans
-l'image (< 0.1\% de la surface totale). YOLO
-peut facilement ignorer ces détections.
+Dans les vidéos de surveillance
+d'intersection, les piétons apparaissent
+souvent très petits — moins de 0.1\%
+de la surface totale de l'image quand
+ils sont éloignés de la caméra. YOLO
+a tendance à ignorer ces petites
+détections, ce qui pose exactement
+le même problème que l'étape précédente
+pour l'anonymisation.
 
-Pour traiter ce problème, 531 crops centrés
-sur les boîtes \textit{person} de très petite
-taille ont été générés et ajoutés à l'ensemble
-d'entraînement. Toutes les classes visibles
-dans chaque crop ont été conservées, avec
-recalcul des coordonnées YOLO.
+Pour traiter ce cas, un script Python
+(\texttt{create\_tiny\_person\_step3.py})
+a généré automatiquement 531 crops
+centrés sur les boîtes person de surface
+normalisée $\leq 0.10\%$. Pour chaque
+crop, toutes les classes visibles dans
+la région recadrée ont été conservées
+avec recalcul des coordonnées YOLO.
+Ces crops ont été ajoutés uniquement
+au train.
 
 \begin{table}[H]
 \centering
-\caption{Distribution finale du dataset —
-         Étape 3}
+\caption{Distribution finale — Étape 3}
 \small
 \begin{tabularx}{\textwidth}{lrrrrrrr}
 \toprule
@@ -220,21 +287,32 @@ recalcul des coordonnées YOLO.
 \textbf{person} &
 \textbf{truck} \\
 \midrule
-Train & 5589 & 468 & 23071 & 286 & 4387 & 22280 & 1531 \\
-Val   & 779  & 117 & 5486  & 83  & 1241 & 507   & 384  \\
-Test  & 393  & 62  & 2742  & 42  & 622  & 309   & 200  \\
+Train & 5589 & 468 & 23071 & 286 &
+4387 & 22280 & 1531 \\
+Val   & 779  & 117 & 5486  & 83  &
+1241 & 507   & 384  \\
+Test  & 393  & 62  & 2742  & 42  &
+622  & 309   & 200  \\
 \midrule
 \textbf{Total} & \textbf{6761} &
-647 & 31299 & 411 & 6250 & 23096 & 2115 \\
+647 & 31299 & 411 &
+6250 & 23096 & 2115 \\
 \bottomrule
 \end{tabularx}
 \label{tab:step3_final}
 \end{table}
 
+La distribution par taille de boîte
+sur la classe person montre que le
+dataset final couvre toutes les
+tailles rencontrées en surveillance
+réelle :
+
 \begin{table}[H]
 \centering
-\caption{Distribution des tailles
-         de boîtes person — Dataset final}
+\caption{Tailles de boîtes person —
+         Dataset final}
+\small
 \begin{tabularx}{\textwidth}{lXXXXX}
 \toprule
 \textbf{Split} &
@@ -257,27 +335,38 @@ Test  & 248  & 49   & 12   & 0    & 0    \\
 \label{tab:person_sizes}
 \end{table}
 
+La majorité des instances person dans
+val et test sont de taille tiny ou
+very small — ce qui correspond à la
+réalité des vidéos de surveillance
+d'intersection et explique les limites
+de rappel observées sur cette classe.
+
 \subsection{Audit qualité}
 
-Un audit visuel des annotations
-\textit{person} a été conduit sur
-les ensembles val et test via des
-contact sheets générés automatiquement,
-permettant de vérifier la cohérence
-des boîtes englobantes, notamment
-pour les très petites instances.
+Un audit visuel des annotations a été
+conduit sur les ensembles val et test
+via des contact sheets générés
+automatiquement. L'objectif était de
+vérifier la cohérence des boîtes
+englobantes, notamment sur les petites
+instances person, et d'identifier
+d'éventuelles erreurs d'annotation
+avant l'entraînement final.
 
 \begin{figure}[H]
 \centering
 \begin{subfigure}{0.49\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{annotation}
+  \includegraphics[width=\textwidth]
+    {annotation}
   \caption{Contrôle des annotations}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.49\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{class_distribution}
+  \includegraphics[width=\textwidth]
+    {class_distribution}
   \caption{Distribution par classe}
 \end{subfigure}
 \caption{Audit visuel du dataset final
@@ -285,52 +374,37 @@ pour les très petites instances.
 \label{fig:dataset_audit}
 \end{figure}
 
-Cet audit complète les tableaux de distribution :
-il rend visibles la densité des scènes, les boîtes
-sur petits objets et le déséquilibre naturel entre
-\textit{car} et les classes plus rares comme
-\textit{emergency\_vehicle}, \textit{bus} ou
-\textit{truck}.
+Cet audit a mis en évidence le déséquilibre
+attendu entre car — classe dominante —
+et les classes rares comme
+emergency\_vehicle, bus et truck. Ce
+déséquilibre a été compensé dans
+l'entraînement par class weighting.
 
-\begin{resultbox}{Dataset final}
-Le dataset final comprend
-\textbf{6 761 images} réparties en
-train (5589) / val (779) / test (393),
-avec \textbf{0 fuite de données} entre
-les splits. La classe \textit{person}
-totalise \textbf{23 096 instances},
-couvrant toutes les tailles de piétons
-rencontrées dans les vidéos de trafic
-urbain.
-\end{resultbox}
-
-
-% ============================================================
-% Section — Benchmark des modèles YOLO
-% ============================================================
-
-\section{Benchmark et sélection du modèle
-         de détection}
+\section{Benchmark et sélection du modèle}
 
 \subsection{Protocole expérimental}
 
-Afin de sélectionner le modèle de détection
-optimal pour notre système, un benchmark
-comparatif a été conduit en deux phases
-complémentaires : une phase d'entraînement
-sur GPU (Google Colab Pro, NVIDIA A100)
-pour évaluer la précision, suivie d'une
-phase de déploiement sur Raspberry Pi 5
-pour évaluer les performances en conditions
-réelles.
+Le benchmark a été conduit en deux phases
+complémentaires. La première phase
+d'entraînement s'est faite sur GPU
+(Google Colab Pro, NVIDIA A100) pour
+mesurer la précision. La seconde phase
+de déploiement s'est faite directement
+sur Raspberry Pi 5 pour mesurer le débit
+réel en conditions embarquées. Ces deux
+phases sont nécessaires parce que les
+métriques GPU ne préjugent pas du débit
+sur CPU ARM — un modèle précis sur GPU
+peut être inutilisable sur Pi 5.
 
-Six architectures YOLO ont été évaluées,
-couvrant deux générations de variantes
-nano et small :
+Six architectures YOLO ont été évaluées
+sur le même dataset Step 3 (6 761 images),
+avec les mêmes hyperparamètres de base :
 
 \begin{table}[H]
 \centering
-\caption{Modèles évalués — Protocole benchmark}
+\caption{Modèles évalués — Protocole}
 \begin{tabularx}{\textwidth}{llccc}
 \toprule
 \textbf{Modèle} &
@@ -350,22 +424,26 @@ YOLO26s  & Small & 32 & 100 & 640 \\
 \label{tab:benchmark_protocol}
 \end{table}
 
-Les six modèles ont été entraînés sur le
-même dataset (Step 3, 6 761 images) avec
-les mêmes corrections : class weighting
-pour compenser le déséquilibre des classes,
-early stopping, et augmentation avancée.
-Les meilleurs poids \texttt{best.pt} ont
-été exportés en ONNX pour le déploiement
-sur Raspberry Pi 5.
+Chaque modèle a été entraîné avec
+class weighting pour compenser le
+déséquilibre des classes, early stopping
+et augmentation avancée. Les meilleurs
+poids \texttt{best.pt} ont ensuite été
+exportés en ONNX pour le déploiement.
 
-\subsection{Phase 1 — Fine-tuning GPU :
-            précision}
+\subsection{Résultats GPU — précision}
+
+Le fine-tuning final a porté sur YOLO26n
+en deux résolutions successives. On est
+parti des poids Step 3 800 déjà stabilisés,
+puis on a augmenté la résolution à 960
+pixels pour améliorer la détection des
+petits objets.
 
 \begin{table}[H]
 \centering
-\caption{Résultats finaux YOLO26n Step 3 —
-         comparaison 800 vs 960}
+\caption{YOLO26n Step 3 — comparaison
+         800 vs 960 pixels}
 \small
 \begin{tabularx}{\textwidth}{Xcccc}
 \toprule
@@ -383,18 +461,22 @@ YOLO26n Step 3 960 &
 \textbf{0.353} & \textbf{0.512} \\
 \bottomrule
 \end{tabularx}
-\vspace{0.35em}
-\parbox{0.95\textwidth}{\scriptsize\textit{Note.}
-Le modèle 960 est retenu comme meilleur modèle de
-précision. La variante 800 reste une option de repli
-si le FPS final sur Raspberry Pi 5 est insuffisant.}
 \label{tab:gpu_benchmark}
 \end{table}
 
+Le gain est visible sur toutes les métriques,
+mais surtout sur la classe person : le rappel
+passe de 0.291 à 0.353 et la mAP50 person
+de 0.450 à 0.512. C'est attendu — une
+résolution plus élevée aide directement
+pour les petits objets.
+
+Les paramètres du dernier run :
+
 \begin{table}[H]
 \centering
-\caption{Paramètres du dernier fine-tuning YOLO26n
-         Step 3 960}
+\caption{Paramètres du fine-tuning
+         YOLO26n Step 3 960}
 \small
 \begin{tabularx}{\textwidth}{lX}
 \toprule
@@ -402,102 +484,96 @@ si le FPS final sur Raspberry Pi 5 est insuffisant.}
 \midrule
 Poids de départ &
 \texttt{YOLO26n\_step3\_800\_best.pt} \\
-Dataset &
-\texttt{dataset\_step3\_tiny\_person\_crops} \\
-GPU d'entraînement &
+GPU &
 NVIDIA A100 40GB — Google Colab Pro \\
 Résolution &
 960$\times$960 pixels \\
 Batch effectif &
 26 images (AutoBatch) \\
 Optimiseur &
-AdamW, \texttt{lr0=1e-4}, \texttt{lrf=0.1},
-cosine learning rate \\
+AdamW, lr0=1e-4, cosine decay \\
 Augmentation &
-\texttt{mosaic=0.1}, \texttt{close\_mosaic=5},
-HSV et flips horizontaux \\
-Arrêt &
-Early stopping à l'epoch 25, meilleur modèle à
-l'epoch 15 \\
+mosaic=0.1, HSV, flips horizontaux \\
+Durée effective &
+$\approx$36 min (2150s),
+arrêt epoch 25, meilleur epoch 15 \\
 \bottomrule
 \end{tabularx}
-\label{tab:yolo26n_960_training_params}
+\label{tab:training_params}
 \end{table}
 
-Ce dernier fine-tuning part du modèle Step 3 800 déjà
-stabilisé, puis augmente la résolution à 960 pixels afin
-d'améliorer les petits objets, notamment les piétons et
-certains véhicules éloignés. L'entraînement s'arrête
-automatiquement lorsque la métrique de validation ne
-progresse plus, ce qui évite de suradapter le modèle au
-jeu d'entraînement.
+L'entraînement s'est terminé proprement
+par early stopping à l'epoch 25, avec
+le meilleur modèle sauvegardé à l'epoch 15.
+La session Colab complète — montage Drive,
+décompression dataset, entraînement, export
+et téléchargement des poids — a pris environ
+45 minutes à 1 heure.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.98\textwidth]{results_cropped}
-\caption{Courbes d'entraînement et de validation YOLO26n
+\includegraphics[width=0.98\textwidth]
+  {results_cropped}
+\caption{Courbes d'entraînement YOLO26n
          Step 3 960 \textit{(Source : auteur)}}
-\label{fig:yolo26n_960_training_curves}
+\label{fig:training_curves}
 \end{figure}
-
-Les courbes de la Figure~\ref{fig:yolo26n_960_training_curves}
-montrent la stabilisation progressive des pertes et des
-métriques de validation. L'early stopping retient le
-meilleur compromis avant sur-apprentissage.
 
 \begin{figure}[H]
 \centering
 \begin{subfigure}{0.49\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{confusion_matrix_cropped}
+  \includegraphics[width=\textwidth]
+    {confusion_matrix_cropped}
   \caption{Matrice de confusion}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.49\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{BoxPR_curve_cropped}
+  \includegraphics[width=\textwidth]
+    {BoxPR_curve_cropped}
   \caption{Courbe précision-rappel}
 \end{subfigure}
-\caption{Évaluation détaillée du modèle final
+\caption{Évaluation du modèle final
          \textit{(Source : auteur)}}
-\label{fig:yolo26n_960_eval_plots}
+\label{fig:eval_plots}
 \end{figure}
 
-La matrice de confusion permet d'identifier les classes
-visuellement proches, notamment \textit{car},
-\textit{bus} et \textit{truck}. La courbe précision-rappel
-complète les métriques mAP en montrant le compromis entre
-détection large et précision des prédictions.
+La matrice de confusion confirme une limite
+attendue : la confusion entre car, bus et
+truck est la plus fréquente. Ce n'était pas
+surprenant — dans les vues CCTV, ces véhicules
+sont vus de face ou de trois-quarts avec des
+formes proches quand ils sont éloignés,
+partiellement occultés ou dans des conditions
+de faible luminosité. C'est une limite
+inhérente au modèle nano sur des classes
+visuellement proches, indépendante du
+dataset choisi.
 
-\subsection{Phase 2 — Benchmark
-            Raspberry Pi 5}
+\subsection{Résultats Pi 5 — débit réel}
 
-Le benchmark GPU mesure la précision
-sur GPU mais ne reflète pas les
-performances réelles sur le dispositif
-cible. Une seconde phase a donc été
-conduite directement sur Raspberry Pi 5,
-avec ONNX Runtime en mode CPU.
-
-\textbf{Configuration du benchmark Pi 5 :}
+Le benchmark sur Raspberry Pi 5 a été
+conduit avec ONNX Runtime en mode CPU,
+sur 200 frames pour les six architectures
+de base et 300 frames pour les variantes
+Step 3 :
 
 \begin{table}[H]
 \centering
-\caption{Configuration benchmark
-         Raspberry Pi 5}
+\caption{Configuration benchmark Pi 5}
 \begin{tabularx}{\textwidth}{lX}
 \toprule
 \textbf{Paramètre} & \textbf{Valeur} \\
 \midrule
-Hardware        & Raspberry Pi 5, 8GB RAM \\
-Runtime         & ONNX Runtime 1.26.0 \\
-Provider        & CPUExecutionProvider \\
-Résolution      & 640$\times$640 pour le benchmark famille ;
-960$\times$960 et 800$\times$800 pour Step 3 \\
-Frames testées  & 200 pour le benchmark famille ;
-300 pour les essais Step 3 \\
-Vidéo de test   & Bellevue — jour \\
-Métriques       & FPS, latence, RAM \\
+Hardware & Raspberry Pi 5, 8GB RAM \\
+Runtime  & ONNX Runtime 1.26.0 \\
+Provider & CPUExecutionProvider \\
+Résolution & 640 (benchmark famille) ;
+960 et 800 (Step 3) \\
+Frames testées & 200 (famille) ;
+300 (Step 3) \\
+Vidéo de test & Bellevue NE8th — jour \\
 \bottomrule
 \end{tabularx}
 \label{tab:rpi5_config}
@@ -505,8 +581,7 @@ Métriques       & FPS, latence, RAM \\
 
 \begin{table}[H]
 \centering
-\caption{Résultats benchmark complet sur
-         Raspberry Pi 5}
+\caption{Benchmark complet sur Raspberry Pi 5}
 \small
 \begin{tabularx}{\textwidth}{llccccc}
 \toprule
@@ -518,8 +593,7 @@ Métriques       & FPS, latence, RAM \\
 \textbf{Person} &
 \textbf{Taille} \\
 \midrule
-\multicolumn{7}{l}{
-\textit{Variantes Nano —
+\multicolumn{7}{l}{\textit{Variantes Nano —
 compatibles temps réel ($\geq$ 5 FPS)}} \\
 \midrule
 \rowcolor{PrimaryBlue!10}
@@ -527,201 +601,300 @@ compatibles temps réel ($\geq$ 5 FPS)}} \\
 \textbf{7.6} & \textbf{65.6\%} &
 \textbf{70.4\%} & \textbf{41.5\%} &
 \textbf{9.8MB} \\
-YOLO26n  & INT8 & 6.2 & 64.0\% & 69.0\% & 40.0\% & 2.9MB \\
-YOLOv11n & FP32 & 5.9 & 69.2\% & 73.4\% & 44.8\% & 10.6MB \\
-YOLOv8n  & INT8 & 5.7 & 68.0\% & 78.0\% & 40.0\% & 3.4MB \\
-YOLOv11n & INT8 & 5.7 & 68.0\% & 72.0\% & 43.0\% & 3.0MB \\
-YOLOv8n & FP32 & 5.3 & 69.8\% & 80.1\% & 41.5\% & 12.3MB \\
+YOLO26n  & INT8 & 6.2 & 64.0\% &
+69.0\% & 40.0\% & 2.9MB \\
+YOLOv11n & FP32 & 5.9 & 69.2\% &
+73.4\% & 44.8\% & 10.6MB \\
+YOLOv8n  & INT8 & 5.7 & 68.0\% &
+78.0\% & 40.0\% & 3.4MB \\
+YOLOv11n & INT8 & 5.7 & 68.0\% &
+72.0\% & 43.0\% & 3.0MB \\
+YOLOv8n  & FP32 & 5.3 & 69.8\% &
+80.1\% & 41.5\% & 12.3MB \\
 \midrule
-\multicolumn{7}{l}{
-\textit{Variantes Small —
+\multicolumn{7}{l}{\textit{Variantes Small —
 incompatibles temps réel ($<$ 3 FPS)}} \\
 \midrule
-YOLO26s  & INT8 & 2.5 & 73.0\% & 85.0\% & 56.0\% & 10.0MB \\
-YOLOv11s & INT8 & 2.5 & 72.0\% & 78.0\% & 51.0\% & 9.9MB \\
-YOLOv8s  & INT8 & 2.4 & 69.0\% & 77.0\% & 50.0\% & 11.5MB \\
-YOLO26s  & FP32 & 2.1 & 74.9\% & 87.1\% & 58.0\% & 38.2MB \\
-YOLOv11s & FP32 & 1.9 & 73.5\% & 80.2\% & 52.6\% & 37.9MB \\
-YOLOv8s  & FP32 & 1.5 & 71.0\% & 79.1\% & 51.2\% & 44.8MB \\
+YOLO26s  & INT8 & 2.5 & 73.0\% &
+85.0\% & 56.0\% & 10.0MB \\
+YOLOv11s & INT8 & 2.5 & 72.0\% &
+78.0\% & 51.0\% & 9.9MB \\
+YOLOv8s  & INT8 & 2.4 & 69.0\% &
+77.0\% & 50.0\% & 11.5MB \\
+YOLO26s  & FP32 & 2.1 & 74.9\% &
+87.1\% & 58.0\% & 38.2MB \\
+YOLOv11s & FP32 & 1.9 & 73.5\% &
+80.2\% & 52.6\% & 37.9MB \\
+YOLOv8s  & FP32 & 1.5 & 71.0\% &
+79.1\% & 51.2\% & 44.8MB \\
 \bottomrule
 \end{tabularx}
-\label{tab:full_benchmark_rpi5}
+\label{tab:full_benchmark}
 \end{table}
 
-\subsection{Analyse des résultats}
+\subsection{Décision finale}
 
-\subsubsection{Nano vs Small —
-               Validation empirique}
+Deux résultats ressortent clairement
+de ce benchmark.
 
-Le benchmark confirme empiriquement
-que les variantes Small sont
-\textbf{incompatibles avec le temps réel}
-sur Raspberry Pi 5 : aucune variante
-small n'atteint 3 FPS, quelle que soit
-la précision du format d'exportation.
-À l'inverse, toutes les variantes nano
-dépassent le seuil de 5 FPS requis
-pour une gestion adaptative des feux
-de signalisation.
+Le premier concerne les variantes small.
+Leur incompatibilité avec le temps réel
+sur Pi 5 n'était pas totalement
+surprenante — elles sont plus coûteuses
+en calcul. Mais le benchmark a permis
+de la quantifier précisément : aucune
+variante small ne dépasse 3 FPS, quelle
+que soit la précision numérique du format
+d'export. Ce constat ferme définitivement
+la porte aux architectures small pour
+un déploiement sur CPU ARM.
 
-Ce résultat est cohérent avec les
-recommandations de Wang et al. (2025),
-qui identifient les architectures légères
-comme la solution privilégiée pour les
-dispositifs edge à ressources limitées.
+Le deuxième concerne la quantification
+INT8. Elle réduit la taille du modèle
+significativement, mais n'apporte pas
+de gain FPS systématique et introduit
+une confusion accrue entre car, bus et
+truck. Le redéploiement final du modèle
+Step 3 800 en INT8 dynamique en est
+l'illustration : la taille passe de
+9.4 MB à 2.8 MB, mais le débit descend
+à 2.06 FPS contre 3.94 FPS en FP32.
+Le format FP32 est donc retenu.
 
-\subsubsection{FP32 vs INT8}
+YOLO26n FP32 est sélectionné pour trois
+raisons concrètes. Son débit de 7.6 FPS
+sur Pi 5 est le plus élevé parmi les
+variantes nano — et la marge au-dessus
+du seuil minimal de 5 FPS laisse des
+ressources CPU disponibles pour le reste
+du pipeline. Son architecture NMS-Free
+supprime l'étape de post-traitement qui
+consomme du CPU sur les autres modèles.
+Et son empreinte de 9.8 MB en ONNX FP32
+est la plus légère des trois architectures
+nano retenues.
 
-La quantification INT8 réduit fortement
-la taille du modèle, mais n'apporte pas
-un gain FPS systématique sur Raspberry Pi 5
-et introduit une confusion plus marquée entre
-les classes visuellement proches, notamment
-\textit{car}, \textit{bus} et \textit{truck}.
-Ce phénomène est cohérent avec Wang et al. (2025),
-qui signalent une chute de 4.7 à 6.2\% de l'AP
-sur les petits objets sous quantification INT8.
-Dans notre redéploiement final, l'export INT8
-dynamique du modèle Step 3 800 réduit bien la taille
-de l'artefact ONNX de \textbf{9.4 MB} à \textbf{2.8 MB},
-mais il descend à \textbf{2.06 FPS} sur Raspberry Pi 5,
-contre \textbf{3.94 FPS} pour le FP32. Le format
-\textbf{FP32 a donc été retenu} pour garantir à la fois
-la fiabilité des détections et le meilleur débit mesuré.
-
-\subsubsection{Modèle final retenu —
-               YOLO26n FP32}
-
-Parmi les variantes nano en FP32,
-\textbf{YOLO26n} est retenu comme
-famille de modèles de déploiement pour les raisons
-suivantes :
-
-\begin{enumerate}
-    \item \textbf{FPS le plus élevé :}
-    7.6 FPS réels — la marge la plus
-    importante au-dessus du seuil minimal,
-    laissant des ressources CPU disponibles
-    pour le tracking, l'anonymisation
-    et le dashboard Flask.
-
-    \item \textbf{Architecture NMS-Free :}
-    YOLO26n supprime l'étape
-    Non-Maximum Suppression, réduisant
-    la latence sur CPU ARM~\cite{sapkota2025}.
-
-    \item \textbf{Modèle léger :}
-    environ 9.6 à 9.8 MB en ONNX FP32 —
-    empreinte mémoire minimale
-    sur le Raspberry Pi 5.
-
-    \item \textbf{Fine-tuning final :}
-    YOLO26n Step 3 960 améliore la mAP50
-    test à 0.792 et le rappel \textit{person}
-    à 0.353.
-\end{enumerate}
-
-Un redéploiement final du modèle Step 3 960 sur
-Raspberry Pi 5 a ensuite été réalisé avec les ROI
-personnes et véhicules activées. Sur 300 frames de
-la vidéo NE8th, le pipeline complet atteint
-\textbf{2.16 FPS} en moyenne, soit environ
-\textbf{463 ms/frame}. Deux variantes plus légères
-ont aussi été mesurées : \textbf{2.48 FPS} avec ROI
-personnes toutes les 10 frames et sans ROI véhicules,
-puis \textbf{2.51 FPS} sans ROI additionnelles. Le gain
-reste donc limité, ce qui indique que le coût principal
-vient de l'inférence ONNX en 960$\times$960 pixels.
-Cette configuration est retenue comme mode d'analyse
-haute précision, tandis qu'un mode temps réel fluide
-nécessite un export plus léger ou une réduction de la
-fréquence d'inférence. Un export expérimental
-800$\times$800 depuis les mêmes poids a ensuite été
-testé : il atteint \textbf{3.94 FPS} sans ROI et
-\textbf{3.45 FPS} avec ROI personnes toutes les
-10 frames lorsque toutes les frames sont inférées.
-Le gain est significatif, mais reste inférieur au
-seuil de 5 FPS en inférence exhaustive. Une dernière
-optimisation logicielle, \texttt{--vid-stride 2},
-infère une frame source sur deux : elle atteint
-\textbf{4.28 FPS IA} et couvre \textbf{7.84 frames
-source/s}. Cette valeur dépasse le seuil de 5 FPS en
-couverture vidéo, mais doit être distinguée du FPS
-d'inférence réel. L'INT8 dynamique, malgré sa taille
-plus faible, a été rejeté car il ralentit le pipeline.
-
-\begin{resultbox}{Modèle retenu —
-                  YOLO26n FP32}
-YOLO26n FP32 est sélectionné comme base
-de déploiement. La variante Step 3 960
-est retenue comme meilleur modèle de
-précision, tandis que la variante Step 3
-800 exportée depuis ces poids devient le
-meilleur candidat Pi expérimental
-(\textbf{3.94 FPS} sans ROI, ou
-\textbf{7.84 frames source/s} avec
-\texttt{--vid-stride 2}). Le stride permet
-d'atteindre le seuil de couverture vidéo,
-mais seulement une frame sur deux est inférée.
-\end{resultbox}
-
-\subsection{Artefacts finaux et reproduction}
-
-Pour assurer la reproductibilité du pipeline,
-les artefacts utilisés dans l'implémentation
-finale sont conservés dans le dépôt local du
-projet. Le tableau suivant résume les fichiers
-principaux.
+La variante Step 3 960 est retenue comme
+modèle de précision. Son redéploiement
+complet avec ROI atteint 2.16 FPS sur Pi 5
+— ce qui en fait un mode d'analyse plutôt
+que de traitement temps réel continu.
+Un export 800 pixels depuis les mêmes poids
+améliore le débit à 3.94 FPS sans ROI.
+Avec \texttt{--vid-stride 2}, ce même
+export couvre 7.84 frames source par
+seconde en n'inférant qu'une frame sur deux
+— le meilleur compromis embarqué obtenu
+pour le modèle Step 3.
 
 \begin{table}[H]
 \centering
-\caption{Artefacts finaux du pipeline}
+\caption{Récapitulatif des variantes
+         Step 3 sur Raspberry Pi 5}
 \small
-\begin{tabularx}{\textwidth}{lX}
+\begin{tabularx}{\textwidth}{Xcccl}
 \toprule
-\textbf{Élément} & \textbf{Chemin} \\
+\textbf{Variante} &
+\textbf{FPS analyse} &
+\textbf{FPS source} &
+\textbf{Taille} &
+\textbf{Statut} \\
 \midrule
-Dataset final &
-\path{data/dataset/dataset_step3_tiny_person_crops/data.yaml} \\
-Dataset final suivi DVC &
-\path{data/dataset/dataset_step3_tiny_person_crops.dvc} \\
-Poids PyTorch final local &
-\path{models/downloads/YOLO26n_step3_960_best.pt} \\
-Modèle ONNX déployable local &
-\path{models/downloads/YOLO26n_step3_960_best.onnx} \\
-Courbe d'entraînement &
-\path{models/downloads/YOLO26n_step3_960_results.csv} \\
-Paramètres reproductibles &
-\path{params.yaml} \\
-Pipeline DataOps/MLOps &
-\path{dvc.yaml} \\
-Verrouillage DVC &
-\path{dvc.lock} \\
-Métriques finales &
-\path{metrics/final_yolo26n_step3_960.json} \\
-Base MLflow locale &
-\path{mlflow.db} \\
-Script MLflow local &
-\path{scripts/log_mlflow_final.py} \\
-Vidéo de test piétons &
-\path{data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4} \\
-Résultats pipeline &
-\path{results/pipeline_results.json} \\
+Step 3 960 + ROI &
+2.16 & 2.16 & 9.6MB &
+Mode haute précision \\
+Step 3 960 sans ROI &
+2.51 & 2.51 & 9.6MB &
+Limite inférence 960 \\
+Step 3 800 sans ROI &
+3.94 & 3.94 & 9.4MB &
+Export expérimental \\
+Step 3 800 stride 2 &
+4.28 & 7.84 & 9.4MB &
+Meilleur compromis \\
+Step 3 800 INT8 &
+2.06 & 2.06 & 2.8MB &
+Écarté — trop lent \\
 \bottomrule
 \end{tabularx}
-\label{tab:artefacts_finaux}
+\label{tab:step3_rpi5}
 \end{table}
 
-La commande de lancement utilisée depuis la racine du
-projet privilégie l'exécution en module Python afin
-d'éviter les erreurs d'import liées au package
-\texttt{pipeline}.
+\section{Traçabilité et reproductibilité}
+
+\subsection{Approche adoptée}
+
+MLflow n'a pas piloté tous les
+entraînements depuis le début. Il a été
+intégré comme couche de documentation
+finale, une fois le modèle retenu, pour
+centraliser les paramètres, les métriques
+et les artefacts de déploiement dans un
+format reproductible. L'objectif n'était
+pas de construire une infrastructure MLOps
+industrielle, mais de rendre les choix
+du projet vérifiables et répétables.
+
+Trois niveaux de traçabilité ont été mis
+en place.
+
+Le premier niveau concerne les données
+et paramètres. Le dataset final est décrit
+par \texttt{data.yaml}. Les paramètres
+d'entraînement et d'inférence sont
+centralisés dans \texttt{params.yaml}.
+Les métriques finales sont conservées
+dans \path{metrics/final_yolo26n_step3_960.json}
+et les résultats terrain dans
+\path{results/pipeline_results.json}.
+
+Le deuxième niveau est le suivi MLflow.
+Le script \texttt{scripts/log\_mlflow\_final.py}
+crée une exécution MLflow locale (base
+SQLite \texttt{mlflow.db}) contenant les
+paramètres, les métriques et les artefacts
+finaux — poids PyTorch, export ONNX,
+courbes CSV. L'exécution finale porte
+le nom \texttt{YOLO26n-Step3-960-final-6582f915}.
+
+Le troisième niveau est le déploiement.
+La commande \texttt{python3 -m pipeline.main}
+standardise le lancement du pipeline.
+L'export ONNX assure la portabilité vers
+le Raspberry Pi 5. Le dashboard Flask
+permet de valider le fonctionnement
+en conditions réelles.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]
+  {mlflow_ui_report}
+\caption{Interface MLflow — expérience finale
+         \texttt{smart-traffic-agadir-yolo26n}
+         \textit{(Source : auteur)}}
+\label{fig:mlflow_ui}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]
+  {mlflow_artifacts_report}
+\caption{Artefacts du run final :
+         poids PyTorch, ONNX, métriques
+         \textit{(Source : auteur)}}
+\label{fig:mlflow_artifacts}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.94\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={
+    rounded corners=5pt, very thick,
+    minimum width=4.0cm,
+    minimum height=1.08cm,
+    align=center
+  },
+  data/.style={box,
+    draw=PrimaryBlue, fill=PrimaryBlue!8},
+  exp/.style={box,
+    draw=AccentGreen, fill=AccentGreen!8},
+  dep/.style={box,
+    draw=AccentOrange,
+    fill=AccentOrange!10},
+  lane/.style={
+    rounded corners=8pt,
+    draw=DarkGray!45,
+    fill=LightGray!45,
+    inner xsep=0.35cm,
+    inner ysep=0.30cm
+  },
+  arrow/.style={
+    -{Latex[length=3mm]},
+    line width=1.15pt,
+    color=DarkGray},
+  note/.style={
+    font=\scriptsize, color=DarkGray,
+    fill=white, inner sep=2pt}
+]
+
+\node[data] (raw) at (0,0)
+  {Données brutes\\vidéos + images};
+\node[data] (prep) at (5.0,0)
+  {Préparation\\splits + crops};
+\node[data] (yaml) at (10.0,0)
+  {\texttt{data.yaml}\\classes + chemins};
+
+\node[exp] (train) at (10.0,-2.20)
+  {Colab A100\\fine-tuning};
+\node[exp] (mlflow) at (5.0,-2.20)
+  {MLflow local\\paramètres + artefacts};
+\node[exp] (metrics) at (0,-2.20)
+  {\texttt{metrics/}\\résultats finaux};
+
+\node[dep] (onnx) at (0,-4.40)
+  {Export ONNX\\FP32};
+\node[dep] (pi) at (5.0,-4.40)
+  {Raspberry Pi 5\\benchmark CPU};
+\node[dep] (dash) at (10.0,-4.40)
+  {Dashboard\\validation};
+
+\begin{scope}[on background layer]
+\node[lane,
+  fit=(raw)(prep)(yaml),
+  label={[font=\bfseries\color{PrimaryBlue}]
+    left:Dataset}] {};
+\node[lane,
+  fit=(train)(mlflow)(metrics),
+  label={[font=\bfseries\color{AccentGreen}]
+    left:MLOps}] {};
+\node[lane,
+  fit=(onnx)(pi)(dash),
+  label={[font=\bfseries\color{AccentOrange}]
+    left:Déploiement}] {};
+\end{scope}
+
+\draw[arrow] (raw) --
+  node[note, above] {sélection} (prep);
+\draw[arrow] (prep) --
+  node[note, above] {configuration} (yaml);
+\draw[arrow] (yaml) --
+  node[note, right] {données} (train);
+\draw[arrow] (train) --
+  node[note, above] {run} (mlflow);
+\draw[arrow] (mlflow) --
+  node[note, above] {logs} (metrics);
+\draw[arrow] (metrics) --
+  node[note, left] {modèle final} (onnx);
+\draw[arrow] (onnx) --
+  node[note, above] {déploiement} (pi);
+\draw[arrow] (pi) --
+  node[note, above] {preuves} (dash);
+
+\node[
+  draw=DarkGray!50, fill=white,
+  rounded corners=4pt, align=center,
+  font=\scriptsize, text width=11.3cm,
+  below=0.65cm of pi
+]{MLflow centralise les paramètres
+et artefacts du run final. Le benchmark
+Pi 5 fournit les mesures de débit réel.};
+\end{tikzpicture}}
+\caption{Chaîne de traçabilité du projet
+         \textit{(Source : auteur)}}
+\label{fig:mlops_pipeline}
+\end{figure}
+
+\subsection{Commande de lancement}
+
+Le pipeline final se lance depuis la
+racine du projet avec :
 
 \begin{lstlisting}[language=bash,
-caption={Commande de lancement du pipeline final},
-label={lst:pipeline_command}]
+caption={Lancement du pipeline final}]
 python3 -m pipeline.main \
-  --video data/videos/ne8th/Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4 \
+  --video data/videos/ne8th/Bellevue_NE8th.mp4 \
   --model models/downloads/YOLO26n_step3_960_best.onnx \
   --imgsz 960 \
   --conf 0.35 \
@@ -730,157 +903,8 @@ python3 -m pipeline.main \
   --vehicle-roi
 \end{lstlisting}
 
-Le dashboard Flask est ensuite accessible à l'adresse
-\texttt{http://<ip-raspberry>:5000}. Il permet de
-sélectionner un instant vidéo, de lancer une analyse
-fixe, puis de vérifier simultanément les détections,
-l'anonymisation, les polygones N/E/S/W et la décision
-MDP.
-
-\subsection{Couche DataOps, MLOps et DevOps}
-
-Afin de rendre le travail plus reproductible, une
-couche de traçabilité a été ajoutée autour du
-pipeline. Elle distingue trois niveaux
-complémentaires.
-
-\begin{itemize}
-    \item \textbf{DataOps :} le fichier
-    \texttt{dvc.yaml} décrit les étapes de
-    construction du dataset : split sans fuite
-    de données, ajout de CityPersons uniquement
-    dans l'ensemble d'entraînement, puis génération
-    des crops pour les très petits piétons. Le
-    dataset final est suivi par DVC via
-    \path{data/dataset/dataset_step3_tiny_person_crops.dvc}
-    (\textbf{13 526 fichiers}, environ \textbf{1.28 Go}).
-    Les étapes intermédiaires sont gelées
-    (\textit{frozen}) afin de documenter la lignée
-    sans relancer les traitements lourds.
-
-    \item \textbf{MLOps :} le fichier
-    \path{params.yaml} centralise les paramètres
-    du modèle final, de l'inférence et du déploiement.
-    Les métriques finales sont conservées dans
-    \path{metrics/final_yolo26n_step3_960.json}.
-    Le script \path{scripts/log_mlflow_final.py}
-    permet de créer une exécution MLflow locale
-    adossée à une base \path{mlflow.db}, contenant
-    les paramètres, les métriques et les artefacts
-    finaux, dont le fichier PyTorch et l'export ONNX.
-    L'exécution finale porte le nom
-    \texttt{YOLO26n-Step3-960-final-6582f915}.
-
-    \item \textbf{DevOps :} la commande
-    \texttt{python3 -m pipeline.main} standardise
-    l'exécution du pipeline, l'export ONNX facilite
-    le passage vers Raspberry Pi 5, et le dashboard
-    Flask fournit une interface de validation
-    opérationnelle accessible sur le port 5000.
-    Le dépôt GitHub complète cette couche en
-    séparant la branche \texttt{main}, réservée
-    aux versions stables du projet, et la branche
-    \texttt{develop}, utilisée pour intégrer les
-    évolutions du pipeline, du rapport et des
-    figures avant validation.
-\end{itemize}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]
-  {mlflow_ui}
-\caption{Interface MLflow locale contenant l'expérience
-         finale \texttt{smart-traffic-agadir-yolo26n}
-         \textit{(Source : auteur)}}
-\label{fig:mlflow_ui}
-\end{figure}
-
-\clearpage
-
-\begin{figure}[H]
-\centering
-\resizebox{0.98\textwidth}{!}{%
-\begin{tikzpicture}[
-  font=\small,
-  box/.style={
-    rounded corners=5pt,
-    very thick,
-    minimum width=4.0cm,
-    minimum height=1.08cm,
-    align=center
-  },
-  data/.style={box, draw=PrimaryBlue, fill=PrimaryBlue!8},
-  exp/.style={box, draw=AccentGreen, fill=AccentGreen!8},
-  dep/.style={box, draw=AccentOrange, fill=AccentOrange!10},
-  lane/.style={
-    rounded corners=8pt,
-    draw=DarkGray!45,
-    fill=LightGray!45,
-    inner xsep=0.35cm,
-    inner ysep=0.30cm
-  },
-  arrow/.style={-{Latex[length=3mm]}, line width=1.15pt, color=DarkGray},
-  note/.style={font=\scriptsize, color=DarkGray, fill=white, inner sep=2pt}
-]
-\node[data] (raw) at (0,0) {Données brutes\\vidéos + images};
-\node[data] (dvc) at (5.0,0) {DVC\\dataset versionné};
-\node[data] (dataset) at (10.0,0) {\texttt{data.yaml}\\fichier \texttt{.dvc}};
-
-\node[exp] (train) at (10.0,-2.20) {Colab A100\\fine-tuning YOLO26n};
-\node[exp] (mlflow) at (5.0,-2.20) {MLflow local\\métriques + artefacts};
-\node[exp] (metrics) at (0,-2.20) {\texttt{metrics/}\\résultats finaux};
-
-\node[dep] (onnx) at (0,-4.40) {Export ONNX\\FP32 retenu};
-\node[dep] (pi) at (5.0,-4.40) {Raspberry Pi 5\\benchmark CPU};
-\node[dep] (dash) at (10.0,-4.40) {Dashboard + rapport\\validation};
-
-\begin{scope}[on background layer]
-\node[lane, fit=(raw)(dvc)(dataset),
-      label={[font=\bfseries\color{PrimaryBlue}]left:DataOps}] {};
-\node[lane, fit=(train)(mlflow)(metrics),
-      label={[font=\bfseries\color{AccentGreen}]left:MLOps}] {};
-\node[lane, fit=(onnx)(pi)(dash),
-      label={[font=\bfseries\color{AccentOrange}]left:DevOps}] {};
-\end{scope}
-
-\draw[arrow] (raw) -- node[note, above] {organisation} (dvc);
-\draw[arrow] (dvc) -- node[note, above] {version} (dataset);
-\draw[arrow] (dataset) -- node[note, right] {données reproductibles} (train);
-\draw[arrow] (train) -- node[note, above] {expérience} (mlflow);
-\draw[arrow] (mlflow) -- node[note, above] {logs} (metrics);
-\draw[arrow] (metrics) -- node[note, left] {modèle final} (onnx);
-\draw[arrow] (onnx) -- node[note, above] {copie + exécution} (pi);
-\draw[arrow] (pi) -- node[note, above] {preuves} (dash);
-
-\node[
-  draw=DarkGray!50,
-  fill=white,
-  rounded corners=4pt,
-  align=center,
-  font=\scriptsize,
-  text width=11.3cm,
-  below=0.65cm of pi
-] {
-\textbf{Lecture du diagramme :}
-DVC fige la donnée, MLflow trace l'expérience, GitHub versionne
-le code et le rapport, puis ONNX permet le benchmark sur
-Raspberry Pi 5 et la validation dashboard.
-};
-\end{tikzpicture}}
-\caption{Chaîne DataOps/MLOps/DevOps du projet
-         \textit{(Source : auteur)}}
-\label{fig:mlops_pipeline}
-\end{figure}
-
-Cette couche reste volontairement légère : elle
-utilise un cache DVC local, une base MLflow SQLite
-et un dépôt GitHub pour la gestion du code. Les commandes
-principales sont :
-\path{scripts/run_dvc.sh} \texttt{status} pour vérifier
-la cohérence DVC, \path{scripts/run_dvc.sh} \texttt{metrics show}
-pour lire les métriques finales, puis
-\texttt{python3} \path{scripts/log_mlflow_final.py}
-pour mettre à jour l'exécution MLflow. Le cycle de
-développement suit le schéma
-\texttt{develop} $\rightarrow$ Pull Request
-$\rightarrow$ \texttt{main}.
+Le dashboard est ensuite accessible à
+\texttt{http://<ip-raspberry>:5000}.
+Les chemins complets des artefacts et
+fichiers de configuration sont détaillés
+dans le dépôt du projet.

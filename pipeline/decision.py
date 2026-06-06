@@ -53,13 +53,16 @@ class MDPDecision:
 
     def decide(self, state):
         """
-        SI emergency: EMERGENCY 45s.
-        SINON: choisir NS/EW par score dominant puis duree selon seuils.
+        1. SI emergency: EMERGENCY 45s.
+        2. SI pietons seuls + trafic faible: PEDESTRIAN 30s.
+        3. SINON: choisir NS/EW par score dominant.
+        4. SI aucun trafic: ALL_RED 15s.
         """
         self.decision_count += 1
         score_ns = self.compute_score(state, "NS")
         score_ew = self.compute_score(state, "EW")
 
+        # Règle 1 — Priorité absolue urgence
         if state.get("emergency", False):
             decision = {
                 "phase": "EMERGENCY",
@@ -74,6 +77,44 @@ class MDPDecision:
             self.history.append(decision)
             return decision
 
+        # Règle 2 — Priorité piétons si trafic faible
+        pedestrians = state.get("pedestrians", 0)
+        count_n = state.get("N", {}).get("count", 0)
+        count_s = state.get("S", {}).get("count", 0)
+        count_e = state.get("E", {}).get("count", 0)
+        count_w = state.get("W", {}).get("count", 0)
+        max_vehicles = max(count_n, count_s, count_e, count_w)
+
+        if pedestrians > 0 and max_vehicles < self.thresholds["MEDIUM"]:
+            decision = {
+                "phase": "PEDESTRIAN",
+                "duration": self.durations.get("pedestrian", 30),
+                "score_NS": score_ns,
+                "score_EW": score_ew,
+                "reason": "Pietons detectes, trafic faible",
+                "timestamp": time.time(),
+                "green_dirs": ["PED"],
+                "red_dirs": ["N", "S", "E", "W"],
+            }
+            self.history.append(decision)
+            return decision
+
+        # Règle 3 — Aucun trafic détecté
+        if score_ns == 0 and score_ew == 0 and pedestrians == 0:
+            decision = {
+                "phase": "ALL_RED",
+                "duration": self.durations.get("all_red", 15),
+                "score_NS": score_ns,
+                "score_EW": score_ew,
+                "reason": "Aucun trafic detecte",
+                "timestamp": time.time(),
+                "green_dirs": [],
+                "red_dirs": ["N", "S", "E", "W"],
+            }
+            self.history.append(decision)
+            return decision
+
+        # Règle 4 — Scoring NS vs EW
         if score_ns >= score_ew:
             phase = "NS"
             dominant = score_ns

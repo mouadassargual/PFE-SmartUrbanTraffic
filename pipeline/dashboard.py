@@ -285,7 +285,7 @@ class Dashboard:
         <h2>KPIs operationnels</h2>
         <div class="cards">
           <div class="card"><div class="label">FPS video source</div><div id="sourceFps" class="value">0</div></div>
-          <div class="card"><div class="label">FPS IA traite</div><div id="fps" class="value">0</div></div>
+          <div class="card"><div class="label">Débit analyse</div><div id="fps" class="value">0</div></div>
           <div class="card"><div class="label">Detections</div><div id="detections" class="value">0</div></div>
           <div class="card"><div class="label">Tracks actifs</div><div id="tracks" class="value">0</div></div>
           <div class="card"><div class="label">Anonymises</div><div id="anon" class="value">0</div></div>
@@ -845,7 +845,7 @@ class Dashboard:
 
     <section class="kpis">
       <div class="kpi"><span>FPS video source</span><strong id="sourceFps">0</strong></div>
-      <div class="kpi"><span>Latence analyse IA</span><strong id="latency">--</strong></div>
+      <div class="kpi"><span>Latence analyse</span><strong id="latency">--</strong></div>
       <div class="kpi"><span>Objets detectes</span><strong id="detections">0</strong></div>
       <div class="kpi"><span>Personnes anonymisees</span><strong id="anon">0</strong></div>
       <div class="kpi"><span>Tracks actifs</span><strong id="tracks">0</strong></div>
@@ -1122,8 +1122,11 @@ class Dashboard:
       document.getElementById('model').textContent = `Modele: ${model.name || '--'} | imgsz=${model.imgsz || '--'}`;
       document.getElementById('frameText').textContent = `Frame: ${a.frame_id || 0}/${totalFrames || '--'} | t=${currentSec.toFixed(1)}s`;
 
-      if (video.source_ready) attachSourceVideo();
-      else updateSourceClock(currentSec, totalSec);
+      if (video.source_ready) {
+        attachSourceVideo();
+      } else {
+        updateSourceClock(currentSec, totalSec);
+      }
 
       const latencyMs = Number(s.fps || 0) > 0 ? 1000 / Number(s.fps) : 0;
       document.getElementById('latency').textContent = latencyMs ? `${latencyMs.toFixed(0)} ms` : '--';

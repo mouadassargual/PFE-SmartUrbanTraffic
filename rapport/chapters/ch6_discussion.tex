@@ -1,7 +1,3 @@
-% ============================================================
-% Chapitre 6 — Discussion et Perspectives
-% ============================================================
-
 \chapter{Discussion et Perspectives}
 \label{ch:discussion_perspectives}
 
@@ -9,314 +5,378 @@
 \phantomsection
 \addcontentsline{toc}{section}{Introduction}
 
-Ce chapitre synthétise les contributions
-scientifiques et techniques de ce travail,
-discute les limites identifiées au cours
-du développement, et propose des pistes
-d'amélioration pour les travaux futurs.
+Ce chapitre revient sur ce qui a été
+accompli concrètement pendant ce projet,
+les limites réelles observées pendant
+les tests, et ce qui resterait à faire
+avant un déploiement urbain réel.
 
-% ============================================================
 \section{Synthèse des contributions}
 
-Ce travail a présenté la conception,
-l'implémentation et la validation d'un
-système de gestion intelligente des feux
-de circulation basé sur l'Edge AI,
-déployé sur Raspberry Pi 5 et intégrant
-des contraintes strictes de protection
-des données personnelles.
+Ce travail a produit quatre contributions
+complémentaires, dont la valeur ne réside
+pas dans chaque brique prise isolément
+mais dans leur intégration dans un seul
+prototype mesuré sur Raspberry Pi 5.
 
-\subsection{Contribution 1 —
-            Pipeline embarqué complet}
+\subsection{Pipeline embarqué complet}
 
-Nous avons conçu et déployé un pipeline
-de traitement temps réel complet sur
-un dispositif embarqué à ressources
-limitées. Ce pipeline intègre six modules
-fonctionnels (M1→M6) s'exécutant
-séquentiellement sur un seul Raspberry
-Pi 5 sans dépendance cloud :
+Le système déploie six modules
+interconnectés sur un seul Raspberry
+Pi 5, sans dépendance cloud : acquisition
+vidéo, détection YOLO26n, anonymisation
+Privacy-by-Design, tracking IoU par zones
+polygonales, décision MDP et dashboard
+Flask. Le fait que ces six modules
+fonctionnent ensemble sur un CPU ARM à
+ressources limitées, avec les compromis
+de vitesse et de précision documentés,
+constitue la contribution principale.
 
-\begin{itemize}
-    \item Acquisition vidéo temps réel
-    \item Détection multi-classes YOLO26n
-    \item Anonymisation Privacy-by-Design
-    \item Tracking IoU par zones
-          polygonales
-    \item Décision MDP adaptative
-    \item Dashboard Flask temps réel
-\end{itemize}
+\subsection{Dataset hybride méthodique}
 
-À notre connaissance, aucun travail
-publié ne présente un pipeline aussi
-complet sur Raspberry Pi 5 dans
-un contexte de gestion du trafic urbain.
+Le dataset de 6 761 images a été
+construit selon une méthodologie
+rigoureuse en trois étapes — split
+sans fuite de données, renforcement
+CityPersons, crops tiny persons —
+pour répondre à une contrainte que
+les datasets publics disponibles ne
+couvraient pas : des scènes de
+surveillance d'intersection en angle
+fixe, avec des classes adaptées au
+contexte marocain. La méthodologie
+est documentée et reproductible.
 
-\subsection{Contribution 2 —
-            Dataset hybride méthodique}
+\subsection{Benchmark empirique sur Pi 5}
 
-Nous avons construit un dataset de
-\textbf{6 761 images} en trois étapes
-méthodologiques rigoureuses : split
-sans fuite de données par groupe source,
-renforcement de la classe \textit{person}
-via CityPersons, et génération de crops
-centrés sur les petites personnes.
-Cette méthodologie garantit une
-évaluation crédible et répond
-directement aux contraintes du
-Privacy-by-Design.
+Le benchmark comparatif de six
+architectures YOLO en conditions
+réelles sur Raspberry Pi 5 produit
+des données empiriques absentes de
+la littérature pour cette combinaison
+matérielle. Deux résultats sont
+directement utiles à d'autres travaux :
+les variantes small sont incompatibles
+avec le temps réel sur CPU ARM (moins
+de 3 FPS dans tous les cas), et la
+quantification INT8 dynamique ralentit
+l'inférence sur ONNX Runtime CPU au
+lieu de l'accélérer.
 
-\subsection{Contribution 3 —
-            Benchmark empirique
-            sur Raspberry Pi 5}
+\subsection{Privacy-by-Design conforme
+            Loi 09-08}
 
-Nous avons conduit le premier benchmark
-empirique comparant six architectures
-YOLO (nano et small, FP32 et INT8)
-directement sur Raspberry Pi 5.
-Ce benchmark confirme empiriquement
-que les variantes small sont
-incompatibles avec le temps réel
-(< 3 FPS), et documente l'échec
-de la quantification INT8 dynamique sur CPU ARM
-pour le modèle Step 3 final. Il montre également
-qu'un export Step 3 800 en FP32, combiné à une
-inférence une frame sur deux, atteint
-\textbf{7.84 frames source/s} en couverture vidéo.
+Positionner le module d'anonymisation
+avant le tracking, avec un tracker IoU
+qui n'utilise que les coordonnées des
+boîtes, permet de respecter la Loi 09-08
+sans dégrader les performances
+fonctionnelles du pipeline. Le rejet
+motivé de ByteTrack pour raisons
+juridiques et matérielles offre un
+modèle d'architecture reproductible
+pour d'autres systèmes de surveillance
+urbaine en contexte marocain.
 
-\subsection{Contribution 4 —
-            Privacy-by-Design
-            conforme Loi 09-08}
+\section{Bilan des hypothèses}
 
-L'intégration du principe
-Privacy-by-Design dans un système
-de gestion du trafic marocain
-constitue une contribution originale.
-Le positionnement du module
-d'anonymisation avant le tracking,
-combiné au rejet motivé de ByteTrack
-pour raisons juridiques, offre
-un modèle d'architecture reproductible
-pour tout système de surveillance
-urbaine conforme à la Loi 09-08.
+Les résultats du Chapitre~\ref{ch:resultats}
+sont résumés ici avec les nuances
+importantes :
 
-% ============================================================
-\section{Validation des hypothèses}
-
-\begin{table}[p]
+\begin{table}[H]
 \centering
 \caption{Bilan de validation des
          hypothèses de recherche}
 \small
-\begin{tabularx}{\textwidth}{cX X X}
+\begin{tabularx}{\textwidth}{cXXX}
 \toprule
 \textbf{H} &
 \textbf{Hypothèse} &
-\textbf{Résultat} &
+\textbf{Résultat clé} &
 \textbf{Statut} \\
 \midrule
 H1 &
-Détection en conditions
-urbaines &
-YOLO26n Step 3 960 :
+Détection en conditions urbaines &
 0.792 mAP50 test &
-Validée avec limite person \\
-\midrule
+Validée — limite person
+documentée \\
 H2 &
 Dataset hybride &
-6 761 images,
-23 096 instances person,
-gain person 800$\rightarrow$960 &
+6 761 images, gain person
+800→960, sans ablation
+par source &
 Validée empiriquement \\
-\midrule
 H3 &
 Edge embarqué &
-YOLO26n nano FP32 :
-7.6 FPS sur Pi 5 ;
+Nano : 7.6 FPS ;
 Step 3 800 stride 2 :
 7.84 frames source/s &
-Validée pour nano ;
-partielle pour Step 3 \\
-\midrule
+Validée nano ;
+partielle Step 3 \\
 H4 &
-Protection données &
-100\% des détections
-person floutées avant tracking &
-Validée avec risque résiduel \\
-\midrule
+Anonymisation &
+100\% détections person
+floutées avant tracking &
+Validée — risque résiduel
+sur non-détections \\
 H5 &
-Décision adaptative &
-5 scénarios MDP
+Décision MDP &
+3 scénarios NS/EW/Emergency
 produits correctement &
-Validée \\
+Validée sur phases
+implémentées \\
 \bottomrule
 \end{tabularx}
-\label{tab:hypotheses_validation}
+\label{tab:hypotheses_bilan_ch6}
 \end{table}
 
-% ============================================================
+\section{Comparaison finale avec
+         la littérature}
+
+Le tableau suivant met à jour la synthèse
+comparative du Chapitre~\ref{ch:etat_art}
+avec les résultats réels mesurés dans
+ce travail.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison finale —
+         résultats mesurés vs littérature}
+\scriptsize
+\begin{tabularx}{\textwidth}{lXXXXX}
+\toprule
+\textbf{Travail} &
+\textbf{Modèle} &
+\textbf{Hardware} &
+\textbf{mAP50} &
+\textbf{FPS réel} &
+\textbf{Privacy} \\
+\midrule
+Hazarika (2024) &
+tiny-YOLOv3 &
+Raspberry Pi &
+— &
+$\sim$5 &
+Non \\
+Sapkota (2025) &
+YOLO26n &
+Jetson Orin &
+— &
+$>$30 &
+Non \\
+Krishna (2026) &
+YOLOv8 &
+Edge device &
+— &
+— &
+Non \\
+Mahalakshmi (2025) &
+Deep Learning &
+PC standard &
+— &
+— &
+Non \\
+\midrule
+\rowcolor{PrimaryBlue!10}
+\textbf{Ce travail} &
+\textbf{YOLO26n} &
+\textbf{Pi 5 8GB} &
+\textbf{79.2\%} &
+\textbf{7.6 (nano)} &
+\textbf{PbD} \\
+\rowcolor{PrimaryBlue!5}
+\textit{Step 3 960} &
+\textit{YOLO26n} &
+\textit{Pi 5 8GB} &
+\textit{79.2\%} &
+\textit{2.16 (analyse)} &
+\textit{PbD} \\
+\bottomrule
+\end{tabularx}
+\vspace{0.3em}
+\begin{flushleft}
+\scriptsize\textit{— : métrique non
+rapportée pour ce hardware.
+PbD : Privacy-by-Design conforme
+Loi 09-08. FPS mesuré sur le
+dispositif cible de chaque travail.
+Le nano valide le temps réel ;
+Step 3 960 est le mode haute précision.}
+\end{flushleft}
+\label{tab:comparaison_finale}
+\end{table}
+
+Ce tableau illustre le positionnement
+de ce travail. Hazarika (2024) est le
+seul autre travail déployé sur Raspberry
+Pi, mais avec une architecture plus
+ancienne et sans Privacy-by-Design.
+Sapkota (2025) utilise YOLO26n mais
+sur Jetson Orin — hardware dix fois
+plus puissant. Notre contribution
+documente pour la première fois, à
+notre connaissance, les performances
+mesurées de YOLO26n sur Raspberry Pi 5
+avec anonymisation intégrée et décision
+adaptative, dans un contexte de smart
+city marocaine.
+
 \section{Limites du système}
 
-Malgré les résultats encourageants,
-plusieurs limites ont été identifiées
-au cours du développement.
+\subsection{Dataset insuffisamment
+            représentatif}
 
-\subsection{Limites liées au dataset}
+Les 133 images collectées localement
+à Lqliaa restent insuffisantes pour
+couvrir la diversité des conditions
+de trafic marocain. Les conditions
+nocturnes, la pluie, les intersections
+à géométrie complexe et les véhicules
+atypiques — motos chargées, véhicules
+à traction animale encore présents
+dans certains quartiers — ne sont pas
+représentés. Un modèle entraîné sur
+ce dataset peut ne pas généraliser
+correctement à ces situations.
 
-Le dataset construit, bien que
-méthodique, présente des limites
-de représentativité. Les 133 images
-collectées localement à Lqliaa
-(Agadir) restent insuffisantes pour
-capturer l'intégralité de la diversité
-des conditions de trafic marocain :
-conditions nocturnes, météo défavorable,
-intersections à géométrie complexe,
-véhicules à traction animale encore
-présents dans certains quartiers.
+\subsection{Détection des petits piétons}
 
-\subsection{Limites de la détection
-            \textit{person}}
+La classe person reste la plus difficile
+du système. Un rappel de 0.353 sur le
+split test signifie qu'environ un tiers
+des piétons réellement présents dans
+les frames de test ne sont pas détectés
+— et donc pas anonymisés. C'est le
+principal risque juridique résiduel
+vis-à-vis de la Loi 09-08. Les efforts
+sur CityPersons, les tiny crops, la
+résolution 960 et les ROI ont amélioré
+ce chiffre, mais pas suffisamment pour
+garantir une couverture complète.
 
-La classe \textit{person} demeure
-inférieure aux classes véhicules.
-Sur le modèle final YOLO26n Step 3
-960, elle atteint 0.797 de précision,
-0.353 de rappel, 0.512 de mAP50 et
-0.257 de mAP50-95 sur le split test.
-Dans les vidéos de surveillance réelles,
-les piétons éloignés, très petits ou
-partiellement occultés peuvent ne pas
-être détectés, laissant une fraction
-de personnes non anonymisées. Cette
-limite constitue le principal risque
-juridique résiduel vis-à-vis de la
-Loi 09-08.
+\subsection{Décision MDP sans dynamique
+            temporelle}
 
-\subsection{Limites de la décision MDP}
+La politique de scoring pondéré réagit
+à l'état instantané de l'intersection.
+Elle ne tient pas compte de ce qui
+s'est passé dans les minutes précédentes,
+ni de ce qui risque de se passer dans
+les minutes suivantes. Un axe avec une
+densité croissante ne bénéficie d'aucune
+anticipation — la décision attend que
+la congestion soit déjà présente pour
+réagir. C'est une limite connue des
+approches déterministes par rapport aux
+approches par apprentissage par
+renforcement.
 
-La politique MDP à scoring pondéré,
-bien qu'efficace et explicable,
-ne prend pas en compte la dynamique
-temporelle du trafic. Elle réagit
-à l'état instantané sans anticiper
-l'évolution probable des densités
-dans les minutes suivantes.
-Les approches par apprentissage
-par renforcement profond (DRL)
-pourraient offrir de meilleures
-performances à long terme au prix
-d'une complexité accrue.
+\subsection{Compromis précision/latence
+            sur Pi 5}
 
-\subsection{Limites matérielles}
+Le modèle Step 3 960 atteint la meilleure
+précision disponible pour ce contexte,
+mais son débit de 2.16 FPS avec ROI sur
+Pi 5 le réserve à un mode d'analyse.
+Même sans ROI, il n'atteint que 2.51 FPS.
+L'export 800 améliore le débit à 3.94 FPS,
+et le mode stride 2 couvre 7.84 frames
+source par seconde — mais en n'inférant
+qu'une frame sur deux. Pour un déploiement
+multi-intersections à l'échelle d'une
+ville, ce compromis ne serait pas
+suffisant sans accélération matérielle
+ou réduction de la fréquence d'inférence.
 
-Le Raspberry Pi 5 offre des
-performances suffisantes pour
-le déploiement mono-caméra mono-intersection,
-mais le niveau de précision du modèle Step 3
-960 a un coût de calcul important. Le pipeline
-complet atteint \textbf{2.16 FPS} avec ROI et
-\textbf{2.51 FPS} sans ROI en 960$\times$960.
-L'export 800 améliore le débit à \textbf{3.94 FPS}
-sans ROI, et le mode \texttt{--vid-stride 2}
-couvre \textbf{7.84 frames source/s}. Cette
-optimisation est pertinente pour une supervision
-vidéo fluide, mais elle n'analyse qu'une frame
-source sur deux. La quantification INT8 dynamique
-n'est pas retenue, car elle ralentit l'inférence
-à \textbf{2.06 FPS} sur ONNX Runtime CPU.
-
-Un déploiement opérationnel à plus grande échelle
-nécessiterait donc soit une réduction contrôlée
-de la fréquence d'inférence, soit une accélération
-matérielle. À l'échelle d'une ville, il faudrait
-également soit une
-infrastructure de Pi distribués,
-soit des dispositifs plus puissants
-(Jetson Orin, FPGA) pour gérer
-plusieurs intersections en parallèle.
-
-% ============================================================
 \section{Perspectives}
 
-\subsection{Amélioration de la détection
-            \textit{person}}
+\subsection{Améliorer la couverture
+            des piétons}
 
-L'intégration de techniques de
-super-résolution légères ou d'un
-modèle dédié à la détection de
-piétons de petite taille permettrait
-d'améliorer significativement
-la couverture d'anonymisation.
-L'exploration de l'anonymisation
-réversible \textbf{ReCAM}
-(Sekione et al., 2024) constitue
-une perspective prometteuse pour
-une conformité renforcée.
+C'est la priorité la plus directement
+liée à la conformité légale. Deux pistes
+sont envisageables. La première est
+un modèle dédié aux petits piétons,
+plus léger qu'un modèle de détection
+généraliste, activé uniquement sur
+les zones piétonnes — ce qui limiterait
+son impact sur le débit. La seconde
+est l'exploration de techniques
+d'anonymisation irréversibles comme
+ReCAM~\cite{jeremiah2024}, qui
+permettraient de traiter les personnes
+partiellement détectées avec plus
+de robustesse.
 
-\subsection{Vers un agent DRL embarqué}
+\subsection{Implémenter les phases
+            Pedestrian et All-Red}
 
-Le remplacement de la politique MDP
-analytique par un agent de
-\textit{Deep Reinforcement Learning}
-léger — entraîné sur des scénarios
-synthétiques, des données terrain
-annotées ou un simulateur routier
-adapté au contexte local, puis distillé
-via knowledge distillation — pourrait améliorer
-les performances sur des scénarios
-de trafic complexes tout en
-restant déployable sur Pi 5.
+La politique MDP du Chapitre~\ref{ch:conception}
+formalise cinq phases, dont Pedestrian
+et All-Red. Le système actuel n'implémente
+pas ces deux règles dans le code de
+décision. Les ajouter permettrait de
+compléter la validation H5 et d'améliorer
+la gestion des intersections à forte
+fréquentation piétonne.
 
-\subsection{Extension multi-intersections}
+\subsection{Vers un agent DRL léger}
 
-L'architecture actuelle traite une
-seule intersection de manière
-indépendante. Une extension naturelle
-consisterait à coordonner plusieurs
-intersections via un protocole
-MQTT, permettant d'optimiser
-les \textit{green waves} sur des
-axes entiers — comme l'Avenue
-Mohammed VI à Agadir.
+Remplacer la politique déterministe par
+un agent de Deep Reinforcement Learning
+distillé — entraîné en simulation puis
+compressé pour tenir sur Pi 5 — pourrait
+améliorer les décisions sur des scénarios
+de trafic complexes et dynamiques.
+C'est une perspective à plus long terme,
+qui nécessite un simulateur routier
+représentatif du contexte marocain.
+
+\subsection{Coordination multi-intersections}
+
+Le système actuel traite une seule
+intersection de façon indépendante.
+Une coordination entre plusieurs
+intersections via MQTT permettrait
+d'optimiser les green waves sur des
+axes entiers — comme l'Avenue Mohammed VI
+à Agadir. C'est une extension naturelle
+de l'architecture actuelle, qui ne
+nécessite pas de refondre le pipeline.
 
 \subsection{Dataset marocain public}
 
-La publication du dataset Lqliaa
-enrichi (avec annotations validées)
-sous une licence ouverte constituerait
-une contribution durable à la
-communauté de recherche en trafic
-urbain marocain, comblant un gap
-documenté dans la littérature.
+Publier le dataset Lqliaa enrichi sous
+une licence ouverte comblerait un manque
+réel dans la littérature sur le trafic
+urbain marocain. C'est une contribution
+durable qui dépasse le cadre de ce
+mémoire.
 
-\subsection{Intégration à la
-            Smart City d'Agadir}
+\subsection{Déploiement pilote à Agadir}
 
-Dans le cadre du programme
-\textit{Agadir Smart City} et des
-initiatives de transformation
-numérique portées par la commune,
-notre système pourrait être déployé
-en phase pilote sur l'intersection
-de Lqliaa, avec un suivi des
-temps d'attente, du débit et de la
-stabilité des phases sur 30 jours
-pour valider les performances en
-conditions réelles.
+Le programme Agadir Smart City offre
+un cadre institutionnel pour un
+déploiement pilote sur une intersection
+réelle. Un test de 30 jours sur
+l'intersection de Lqliaa, avec mesure
+des temps d'attente, du débit et de la
+stabilité des phases, permettrait de
+valider les performances en conditions
+réelles — ce que les vidéos Bellevue ne
+peuvent pas faire.
 
-% ============================================================
 \section*{Synthèse du chapitre}
-\phantomsection
-\addcontentsline{toc}{section}{Synthèse du chapitre}
+\addcontentsline{toc}{section}{Synthèse}
 
-Ce chapitre a discuté les contributions, les limites
-et les perspectives du système. Les limites principales
-concernent la généralisation du dataset marocain, la
-détection des très petits piétons et le redéploiement
-FPS du modèle Step 3 960 sur Raspberry Pi 5. L'export
-800 avec \texttt{--vid-stride 2} apporte le meilleur
-compromis embarqué mesuré, tandis que l'INT8 dynamique
-a été écarté. Ces points ouvrent directement vers la
-conclusion générale du mémoire.
+Ce chapitre a présenté quatre contributions
+concrètes, un bilan honnête des hypothèses
+validées avec leurs limites, et six
+perspectives organisées par ordre de
+priorité. Les deux points les plus
+urgents avant un déploiement réel sont
+l'amélioration de la couverture des
+piétons et l'implémentation des phases
+Pedestrian et All-Red dans le module M5.

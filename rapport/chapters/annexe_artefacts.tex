@@ -1,0 +1,136 @@
+% ============================================================
+% annexe_artefacts.tex — Artefacts et reproduction
+% ============================================================
+
+\chapter{Artefacts et reproduction}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.25\textwidth]
+  {qrcode_github}
+\caption{QR code — Dépôt GitHub du projet
+         \textit{(Source : auteur)}}
+\label{fig:qrcode}
+\end{figure}
+
+\begin{center}
+\small\url{https://github.com/mouadassargual/PFE-SmartUrbanTraffic}
+\end{center}
+\label{annexe:artefacts}
+
+Ce chapitre liste les fichiers principaux
+du projet et les commandes nécessaires
+pour reproduire les résultats présentés
+dans ce mémoire.
+
+\section*{Dépôt GitHub}
+
+Le code source complet du projet est
+disponible à l'adresse suivante :
+
+\begin{center}
+\url{https://github.com/mouadassargual/
+PFE-Smart-Traffic-Urbain}
+\end{center}
+
+\section*{Structure des artefacts}
+
+\begin{table}[H]
+\centering
+\caption{Fichiers principaux du projet}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Fichier} & \textbf{Description} \\
+\midrule
+\texttt{params.yaml} &
+Hyperparamètres d'entraînement et
+paramètres d'inférence centralisés \\
+\texttt{metrics/final\_yolo26n\_step3\_960.json} &
+Métriques finales du modèle retenu \\
+\texttt{results/pipeline\_results.json} &
+Résultats du pipeline sur vidéo terrain \\
+\texttt{mlflow.db} &
+Base MLflow locale — run final
+\texttt{YOLO26n-Step3-960-final-6582f915} \\
+\texttt{models/downloads/} &
+Poids PyTorch et exports ONNX du modèle
+final \\
+\texttt{data/dataset/} &
+Dataset Step 3 — 6 761 images annotées \\
+\texttt{pipeline/decision.py} &
+Module MDP — politique $\pi^*(s)$ \\
+\texttt{pipeline/main.py} &
+Orchestrateur principal du pipeline \\
+\texttt{scripts/log\_mlflow\_final.py} &
+Script de journalisation MLflow \\
+\texttt{test\_mdp.py} &
+Script de validation des 5 scénarios MDP \\
+\bottomrule
+\end{tabularx}
+\label{tab:artefacts}
+\end{table}
+
+\section*{Commandes de lancement}
+
+\textbf{Validation MDP — 5 scénarios :}
+
+\begin{lstlisting}[language=bash]
+python3 test_mdp.py
+\end{lstlisting}
+
+\textbf{Pipeline complet — mode analyse :}
+
+\begin{lstlisting}[language=bash]
+python3 -m pipeline.main \
+  --video data/videos/ne8th/Bellevue_NE8th.mp4 \
+  --model models/downloads/YOLO26n_step3_960_best.onnx \
+  --imgsz 960 \
+  --conf 0.35 \
+  --dashboard \
+  --person-roi \
+  --vehicle-roi
+\end{lstlisting}
+
+\textbf{Pipeline complet — meilleur
+compromis embarqué :}
+
+\begin{lstlisting}[language=bash]
+python3 -m pipeline.main \
+  --video data/videos/ne8th/Bellevue_NE8th.mp4 \
+  --model models/downloads/YOLO26n_step3_800_best.onnx \
+  --imgsz 800 \
+  --conf 0.35 \
+  --dashboard \
+  --person-roi \
+  --vid-stride 2
+\end{lstlisting}
+
+\textbf{Journalisation MLflow :}
+
+\begin{lstlisting}[language=bash]
+python3 scripts/log_mlflow_final.py
+\end{lstlisting}
+
+\section*{Environnement requis}
+
+\begin{table}[H]
+\centering
+\caption{Dépendances principales}
+\small
+\begin{tabularx}{\textwidth}{lll}
+\toprule
+\textbf{Outil} &
+\textbf{Version} &
+\textbf{Usage} \\
+\midrule
+Python & 3.10+ & Langage principal \\
+ONNX Runtime & 1.26.0 & Inférence CPU \\
+OpenCV & 4.x & Traitement vidéo \\
+Flask & 3.x & Dashboard \\
+Ultralytics & 8.x & Entraînement YOLO \\
+MLflow & 2.x & Traçabilité \\
+NumPy & 1.x & Calcul numérique \\
+\bottomrule
+\end{tabularx}
+\label{tab:dependencies}
+\end{table}

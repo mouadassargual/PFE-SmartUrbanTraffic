@@ -1,297 +1,286 @@
-
 \chapter{Introduction générale}
 \label{ch:introduction}
+
 \section{Contexte général}
 
-À l'aube de 2026, les agglomérations urbaines connaissent
-une croissance démographique sans précédent. L'augmentation
-de la population entraîne mécaniquement une multiplication
-du parc automobile, faisant de la congestion routière l'un
-des défis les plus pressants des métropoles modernes.
-Les heures de pointe paralysent quotidiennement des milliers
-de citoyens, génèrent une pollution atmosphérique croissante
-et compromettent l'intervention rapide des services d'urgence.
+Les villes marocaines grandissent vite. Agadir,
+Casablanca, Marrakech — les nouvelles zones
+résidentielles s'étendent, le parc automobile
+augmente chaque année, et les carrefours qui
+suffisaient il y a dix ans sont aujourd'hui
+saturés aux heures de pointe. Ce n'est pas
+une impression : aux principaux carrefours
+d'Agadir, il n'est pas rare de voir un agent
+de police réguler manuellement la circulation
+parce que les feux à cycles fixes ne suffisent
+plus à gérer la réalité du trafic.
 
-Face à ces enjeux, le concept de \textbf{ville intelligente}
-(\textit{smart city}) s'impose comme une réponse structurée,
-visant à mobiliser les technologies numériques au service de
-la gestion urbaine. Le Maroc s'inscrit pleinement dans cette
-dynamique : la ville d'Agadir a lancé en 2022 son programme
-officiel de transformation en ville intelligente, initié
-dans le cadre du programme de développement urbain impulsé
-par Sa Majesté le Roi Mohammed VI. Cette initiative
-témoigne d'une volonté politique forte de moderniser
-les infrastructures urbaines marocaines~\cite{elalaoui2025}.
+Ce problème n'est pas propre à Agadir. Mais
+Agadir a quelque chose de particulier : en 2022,
+la ville a officiellement lancé son programme
+de transformation en ville intelligente, dans
+le cadre du Plan d'Action Communal 2022--2027
+porté par la commune sous l'impulsion de Sa
+Majesté le Roi Mohammed VI~\cite{elalaoui2025}.
+Ce programme place la mobilité intelligente
+au cœur de ses priorités. C'est dans ce
+contexte précis que s'inscrit ce travail.
 
-La gestion du trafic constitue l'une des problématiques
-centrales de cette transformation. Dans les intersections
-d'Agadir, comme dans de nombreuses villes marocaines,
-les systèmes de feux à cycles fixes demeurent la norme.
-Ces dispositifs, incapables de s'adapter aux conditions
-réelles du trafic, engendrent des temps d'attente inutiles,
-des embouteillages récurrents aux heures de pointe et
-des situations dangereuses pour les véhicules d'urgence.
-La présence récurrente d'agents de police aux carrefours
-pour assurer une régulation manuelle illustre les limites
-criantes des systèmes actuels.
+La gestion adaptative des feux de circulation
+est l'une des briques fondamentales d'une
+ville intelligente. Un système capable de
+\textit{voir} l'état réel d'une intersection
+— combien de véhicules attendent, dans quelle
+direction, s'il y a une ambulance — et de
+décider en conséquence quelle voie libérer
+en premier, c'est exactement ce que les
+systèmes actuels à cycles fixes sont incapables
+de faire.
 
-L'essor de l'Intelligence Artificielle ouvre de nouvelles
-perspectives pour résoudre ce problème. Des systèmes
-capables de percevoir visuellement l'état d'une intersection,
-d'analyser la densité du trafic en temps réel et de prendre
-des décisions adaptatives constituent désormais une réalité
-technologique accessible. Cependant, le déploiement de
-caméras de surveillance dans l'espace public soulève une
-question fondamentale : \textbf{comment garantir que ces
-solutions respectent le droit à la vie privée des citoyens,
-conformément à la Loi 09-08 relative à la protection
-des personnes physiques à l'égard du traitement
-des données à caractère personnel~?}
+L'intelligence artificielle, et plus précisément
+la vision par ordinateur embarquée, rend
+cette idée concrète aujourd'hui. Mais elle
+soulève immédiatement une question que j'ai
+trouvée centrale dès le début de ce projet :
+si on installe des caméras aux carrefours
+pour analyser le trafic, ces caméras filment
+aussi des visages, des plaques d'immatriculation,
+des comportements de citoyens. Comment faire
+en sorte que ce système soit utile sans
+devenir un outil de surveillance ?
 
-C'est précisément à cette double problématique —
-efficacité de la gestion du trafic et respect de la
-vie privée — que ce mémoire apporte une réponse
-technique et scientifique.
+C'est la question double à laquelle ce mémoire
+tente de répondre : efficacité de la gestion
+du trafic d'un côté, protection des données
+personnelles de l'autre — et les deux en
+même temps, sur un seul dispositif embarqué
+à faible coût.
 
-\section{Motivation}
+\section{Motivation et choix techniques}
 
 \subsection{Pourquoi l'Edge AI ?}
 
-Les solutions traditionnelles de surveillance du trafic
-reposent généralement sur une architecture Cloud :
-les flux vidéo des caméras sont transmis vers des
-serveurs distants pour traitement, puis les décisions
-sont renvoyées vers les équipements locaux. Cette
-approche présente plusieurs inconvénients majeurs
-dans notre contexte.
+La première approche qu'on imagine pour ce
+type de système, c'est d'envoyer les flux
+vidéo vers un serveur distant qui fait le
+traitement. C'est ce que font la plupart
+des solutions commerciales existantes.
+Le problème, c'est que cette approche
+envoie en permanence des images brutes —
+avec des visages, des plaques — vers des
+infrastructures cloud. Dans le contexte
+marocain, et en particulier avec la Loi 09-08
+relative à la protection des données
+personnelles, ce mode de fonctionnement
+pose un problème juridique réel.
 
-D'une part, la transmission continue de flux vidéo
-vers le Cloud engendre une latence incompatible avec
-les exigences du temps réel. D'autre part, et c'est
-le point le plus critique, \textbf{chaque image transmise
-constitue une donnée personnelle} : elle contient
-des visages, des plaques d'immatriculation et des
-informations comportementales sur les citoyens.
-Transmettre ces données vers des serveurs distants
-expose à des risques majeurs de violation de la
-vie privée et contredit les principes fondamentaux
-de la Loi 09-08.
+L'Edge AI résout ce problème à la racine :
+le traitement se fait directement sur le
+dispositif installé au carrefour. Aucune
+image ne sort de l'intersection. Ce n'est
+pas seulement un avantage technique — c'est
+une condition nécessaire pour que le système
+soit légalement déployable.
 
-L'\textbf{Edge AI} apporte une réponse structurelle
-à ces deux problèmes : le traitement s'effectue
-\textit{localement}, sur le dispositif même, sans
-qu'aucune donnée personnelle ne soit transmise
-vers l'extérieur. Les données restent là où elles
-sont collectées.
+Il y a aussi la question de la latence.
+Un système de gestion du trafic qui attend
+une réponse d'un serveur distant introduit
+un délai incompatible avec les décisions
+en temps réel. Traiter localement, c'est
+décider localement, sans dépendre d'une
+connexion réseau.
 
 \subsection{Pourquoi le Raspberry Pi 5 ?}
 
-Le choix d'un dispositif embarqué à ressources
-limitées — le Raspberry Pi 5 — n'est pas une
-contrainte subie mais un choix délibéré et justifié.
-Il répond à trois impératifs concrets :
+Le Raspberry Pi 5 n'est pas le dispositif
+le plus puissant qu'on puisse choisir pour
+ce type de tâche — un Jetson Orin serait
+plus rapide. Mais le Raspberry Pi 5 coûte
+environ 80 euros. Si l'objectif à terme
+est de déployer ce système à l'échelle
+d'une ville, sur des dizaines d'intersections,
+le coût unitaire devient un critère décisif.
 
-\begin{itemize}
-    \item \textbf{Accessibilité économique :}
-    un déploiement à l'échelle d'une ville
-    nécessite un équipement pour chaque
-    intersection. Le coût unitaire d'un
-    Raspberry Pi 5 est sans commune mesure
-    avec celui d'un serveur dédié.
+C'est aussi un dispositif compact, à faible
+consommation électrique, directement
+intégrable dans les armoires techniques
+qui existent déjà aux carrefours. Et surtout,
+c'est un vrai défi technique : réussir à
+faire tourner un pipeline complet de vision
+par ordinateur en temps réel sur un CPU ARM
+sans GPU dédié, c'est précisément le type
+de contrainte qui distingue un prototype
+de laboratoire d'un système potentiellement
+déployable.
 
-    \item \textbf{Déployabilité :}
-    sa compacité et sa faible consommation
-    électrique le rendent directement
-    intégrable dans les armoires techniques
-    existantes des carrefours.
-
-    \item \textbf{Contribution scientifique :}
-    à notre connaissance, aucun travail existant
-    ne documente le déploiement de YOLO26n
-    sur Raspberry Pi 5 dans un contexte
-    de gestion du trafic urbain.
-\end{itemize}
+À ma connaissance, aucun travail publié
+ne documente le déploiement de YOLO26n
+sur Raspberry Pi 5 dans un contexte de
+gestion du trafic urbain. C'est l'une des
+contributions empiriques de ce mémoire.
 
 \subsection{Pourquoi le Privacy-by-Design ?}
 
-L'évolution rapide des technologies de vision
-par ordinateur et la multiplication des dispositifs
-de surveillance ont rendu la protection des données
-personnelles plus urgente que jamais. Des travaux
-récents ont démontré qu'il est possible de
-ré-identifier des individus même depuis des images
-partiellement anonymisées~\cite{razi2025,jeremiah2024}.
+C'est une initiative que j'ai portée
+personnellement dans ce projet, à partir
+du constat suivant : la Loi 09-08 marocaine
+impose des obligations claires sur le
+traitement des données personnelles, et
+les images de surveillance urbaine en
+contiennent par définition. Un piéton filmé
+à un carrefour, c'est une donnée biométrique
+potentielle. Une plaque d'immatriculation,
+c'est une donnée permettant l'identification
+d'un propriétaire de véhicule.
 
-Face à ce constat, le principe de
-\textbf{\textit{Privacy-by-Design}} s'impose
-comme la seule approche véritablement protectrice :
-la protection des données n'est pas ajoutée
-\textit{a posteriori} comme une fonctionnalité
-optionnelle, mais intégrée dès la conception
-au cœur de l'architecture du système.
+Des travaux récents montrent qu'il est
+possible de ré-identifier des individus
+même à partir d'images partiellement
+anonymisées~\cite{razi2025, jeremiah2024}.
+Le simple fait de flouter a posteriori
+ne suffit pas si les données brutes ont
+déjà circulé dans le système.
 
-Dans notre pipeline, cela se traduit concrètement
-par l'application du floutage gaussien
-\textbf{immédiatement après la détection},
-avant tout traitement ultérieur, de sorte
-qu'aucune donnée personnelle identifiable
-ne circule dans le système — conformément
-aux exigences de la Loi 09-08 marocaine.
+Le principe de Privacy-by-Design répond
+à ça d'une manière plus robuste : on
+n'ajoute pas la protection en fin de
+pipeline, on la place au plus tôt possible.
+Dans notre architecture, le floutage des
+piétons intervient immédiatement après
+leur détection, avant que la frame ne
+soit transmise à n'importe quel autre
+module. C'est une décision d'architecture,
+pas une fonctionnalité optionnelle.
 
 \section{Problématique}
 
-La littérature scientifique récente témoigne d'efforts
-significatifs dans trois directions complémentaires.
-En matière de détection d'objets, les approches
-\textit{one-stage} — dont la famille YOLO constitue
-le représentant le plus emblématique — ont démontré
-leur supériorité en termes de vitesse d'inférence,
-tandis que les approches \textit{two-stage} offrent
-une précision accrue au détriment de la latence
-\cite{ramos2025}. Sur le plan du déploiement embarqué,
-les travaux récents explorent des variantes nano
-et des techniques de quantification pour adapter
-ces modèles aux dispositifs à ressources limitées
-\cite{wang2025, sapkota2025}. Enfin, concernant
-la protection des données, des techniques
-d'anonymisation par floutage ou remplacement
-de silhouette ont été proposées pour les systèmes
-de vidéosurveillance \cite{jeremiah2024, razi2025}.
+Quand j'ai commencé à explorer la littérature
+sur ce sujet, j'ai trouvé des travaux qui
+traitent chaque brique séparément : des papiers
+sur la détection YOLO embarquée, d'autres
+sur les systèmes adaptatifs de feux, d'autres
+encore sur l'anonymisation vidéo. Ce qui
+manque, c'est un système qui combine tout
+ça dans un seul pipeline cohérent, déployé
+sur un dispositif réellement limité, et
+validé sur des données qui reflètent le
+contexte urbain d'une ville comme Agadir.
 
-Cependant, une analyse approfondie de l'état de l'art
-révèle une lacune fondamentale : \textbf{aucun travail
-existant ne propose un pipeline complet et intégré}
-combinant simultanément détection temps réel,
-anonymisation Privacy-by-Design et décision adaptative
-des feux, déployé sur un dispositif embarqué
-minimaliste, et validé sur des données locales
-représentatives du contexte urbain marocain.
-Michailidis et al. confirment d'ailleurs que
-\textit{"le déploiement en conditions réelles demeure
-le défi le plus pressant et non résolu"} dans
-ce domaine~\cite{michailidis2025}.
+Les approches one-stage — dont YOLO est
+le représentant le plus utilisé — ont
+prouvé leur efficacité pour la détection
+temps réel~\cite{ramos2025}. Les travaux
+sur le déploiement embarqué montrent que
+les variantes nano restent les seules
+vraiment viables sur CPU ARM~\cite{wang2025,
+sapkota2025}. Et sur la protection des
+données, plusieurs techniques d'anonymisation
+ont été proposées, mais rarement intégrées
+dès la conception dans un pipeline de
+gestion du trafic~\cite{jeremiah2024,
+razi2025}.
+
+Michailidis et al. résument bien l'état
+de la situation : \textit{"le déploiement
+en conditions réelles demeure le défi le
+plus pressant et non résolu"} dans ce
+domaine~\cite{michailidis2025}. Ce mémoire
+tente d'apporter une réponse concrète,
+même partielle, à ce constat.
 
 \begin{definitionbox}{Question centrale de recherche}
-Comment concevoir et déployer un système intelligent
-de gestion adaptative des feux de circulation en
-temps réel, sur dispositif embarqué à ressources
-limitées, tout en garantissant la protection des
-données personnelles des usagers, dans le contexte
+Comment concevoir et déployer un système
+intelligent de gestion adaptative des feux
+de circulation en temps réel, sur dispositif
+embarqué à ressources limitées, tout en
+garantissant la protection des données
+personnelles des usagers, dans le contexte
 des smart cities marocaines~?
 \end{definitionbox}
 
 \section{Objectifs de recherche}
 
-Pour répondre à la problématique posée, ce travail
-poursuit cinq objectifs complémentaires et interdépendants :
+Ce travail est organisé autour de cinq
+objectifs qui se complètent et s'enchaînent
+logiquement.
 
-\begin{tcolorbox}[
-  colback  = PrimaryBlue!5,
-  colframe = PrimaryBlue,
-  arc      = 4pt,
-  boxrule  = 1pt
-]
+Le premier (\textbf{O1}) concerne la détection :
+développer et entraîner un modèle capable
+d'identifier en temps réel les véhicules
+(voitures, bus, camions, motos, véhicules
+d'urgence) et les piétons dans des scènes
+de surveillance urbaine, en incluant des
+données du contexte marocain.
 
-\textbf{O1 — Détection multi-classes en temps réel}\\
-Développer et fine-tuner un modèle de détection d'objets
-capable d'identifier en temps réel les véhicules
-(voitures, bus, camions, motos, véhicules d'urgence)
-et les piétons dans un contexte de surveillance
-urbaine marocain.
+Le deuxième (\textbf{O2}) concerne la décision :
+concevoir un module qui, à partir des
+densités de trafic détectées, calcule
+automatiquement quelle phase de feux
+activer. Ce module est formalisé comme
+un Processus de Décision Markovien à
+politique déterministe.
 
-\vspace{0.4cm}
+Le troisième (\textbf{O3}) concerne le déploiement :
+faire tourner l'ensemble du pipeline sur
+un Raspberry Pi 5 en conditions réelles,
+via un export ONNX du modèle, avec une
+cadence suffisante pour que les décisions
+aient du sens.
 
-\textbf{O2 — Décision adaptative des feux}\\
-Concevoir un module de décision adaptative des phases
-de feux de circulation, basé sur la densité de trafic
-détectée et formalisé comme un Processus de Décision
-Markovien à politique déterministe.
+Le quatrième (\textbf{O4}) concerne la conformité
+légale : garantir que le système respecte
+la Loi 09-08 en anonymisant automatiquement
+les piétons détectés avant tout traitement
+ultérieur.
 
-\vspace{0.4cm}
-
-\textbf{O3 — Déploiement embarqué temps réel}\\
-Déployer le pipeline complet de perception et de
-décision en temps réel sur un dispositif embarqué
-à ressources limitées (Raspberry Pi 5), via
-export ONNX, seuils d'inférence adaptés et
-optimisations CPU. La validation temps réel porte
-sur la famille YOLO26n nano, tandis que le modèle
-Step 3 960 est retenu comme meilleur compromis de
-précision.
-
-\vspace{0.4cm}
-
-\textbf{O4 — Conformité Loi 09-08}\\
-Garantir la conformité à la Loi 09-08 relative
-à la protection des données personnelles, via
-l'anonymisation automatique des piétons détectés
-selon le principe Privacy-by-Design.
-
-\vspace{0.4cm}
-
-\textbf{O5 — Validation sur données réelles}\\
-Valider les performances du système sur des données
-réelles collectées dans le contexte urbain marocain,
-notamment à Lqliaa (Agadir).
-
-\end{tcolorbox}
+Le cinquième (\textbf{O5}) concerne la validation :
+tester le système sur des données réelles
+incluant des vidéos filmées à Lqliaa,
+Agadir, avec un drone DJI Mini 2, pour
+ancrer l'évaluation dans un contexte
+urbain marocain concret.
 
 \section{Hypothèses de recherche}
 
-La démarche scientifique adoptée dans ce mémoire
-repose sur cinq hypothèses de recherche vérifiables
-empiriquement. Chacune est associée à un objectif
-et sera validée ou infirmée par les résultats
-expérimentaux présentés au Chapitre~\ref{ch:resultats}.
+Chaque objectif s'accompagne d'une hypothèse
+vérifiable empiriquement. Ces hypothèses
+structurent la démarche expérimentale
+et sont validées ou infirmées dans le
+Chapitre~\ref{ch:resultats}.
 
-\begin{warningbox}{H1 — Détection en temps réel}
-Nous supposons qu'un modèle de détection d'objets
-de type \textit{one-stage}, fine-tuné sur un dataset
-incluant des données locales marocaines, peut atteindre
-des performances suffisantes pour la détection de
-véhicules et piétons en conditions réelles urbaines.
-\end{warningbox}
+\textbf{H1 — Détection en conditions urbaines.}
+Un modèle one-stage fine-tuné sur un dataset
+incluant des données locales marocaines peut
+atteindre des performances suffisantes pour
+détecter fiablement véhicules et piétons
+dans des scènes de surveillance réelle.
 
-\vspace{0.3cm}
+\textbf{H2 — Apport du dataset hybride.}
+L'intégration de données locales marocaines,
+de CityPersons et de crops de petits piétons
+améliore la robustesse du modèle par rapport
+à un entraînement sur données internationales
+seules.
 
-\begin{warningbox}{H2 — Apport du dataset hybride}
-Nous supposons qu'un fine-tuning intégrant des données
-locales marocaines, CityPersons et des crops de petits
-piétons améliore la robustesse du modèle dans le
-contexte routier étudié.
-\end{warningbox}
+\textbf{H3 — Faisabilité embarquée temps réel.}
+Un Raspberry Pi 5, avec un modèle optimisé
+via export ONNX, peut atteindre une cadence
+suffisante pour une gestion adaptative des
+feux de signalisation.
 
-\vspace{0.3cm}
+\textbf{H4 — Compatibilité anonymisation et pipeline.}
+L'application du floutage gaussien en temps
+réel sur les piétons détectés n'impacte pas
+significativement les performances fonctionnelles
+du système.
 
-\begin{warningbox}{H3 — Déploiement embarqué temps réel}
-Nous supposons qu'un dispositif embarqué à ressources
-limitées, via l'optimisation du modèle de détection,
-peut atteindre une précision suffisante pour la gestion
-du trafic et une latence compatible avec le traitement
-en temps réel.
-\end{warningbox}
-
-\vspace{0.3cm}
-
-\begin{warningbox}{H4 — Protection des données}
-Nous supposons que l'application d'une technique
-de protection des données personnelles en temps réel
-sur les piétons détectés n'impacte pas significativement
-les performances globales du système.
-\end{warningbox}
-
-\vspace{0.3cm}
-
-\begin{warningbox}{H5 — Décision adaptative}
-Nous supposons qu'une fonction de décision basée
-sur l'état courant de l'intersection — défini par
-la densité et le type des objets détectés — permet
-de générer automatiquement une politique d'allocation
-des phases de feux qui réduit le temps d'attente moyen
-et garantit la priorité aux véhicules d'urgence.
-\end{warningbox}
-
-\vspace{0.5cm}
+\textbf{H5 — Décision adaptative cohérente.}
+Une politique de décision basée sur les
+densités et types d'objets détectés permet
+de générer des phases de feux cohérentes
+avec l'état réel de l'intersection, et
+d'assurer la priorité absolue aux véhicules
+d'urgence.
 
 \begin{table}[H]
 \centering
@@ -300,238 +289,182 @@ et garantit la priorité aux véhicules d'urgence.
 \toprule
 \textbf{H} & \textbf{Hypothèse} &
 \textbf{Métrique de validation} &
-\textbf{Objectif} \\
+\textbf{Obj.} \\
 \midrule
-H1 & Détection temps réel &
+H1 & Détection urbaine &
 mAP@50 test $\geq$ 75\% & O1 \\
 H2 & Dataset hybride &
-Gain Step 3 800 vs 960 et couverture person & O1 \\
+Gain mAP person entre Step 3 800 et 960 & O1 \\
 H3 & Edge embarqué &
-YOLO26n nano $\geq$ 5 FPS; Step 3 800 = 3.45--3.94 FPS & O3 \\
-H4 & Protection données &
-100\% des détections person floutées & O4 \\
-H5 & Décision adaptative &
-Validation 5 scénarios & O2 \\
+YOLO26n nano $\geq$ 5 FPS sur Pi 5 & O3 \\
+H4 & Anonymisation &
+100\% des détections person floutées avant tracking & O4 \\
+H5 & Décision MDP &
+Cohérence sur 3 scénarios validés
+expérimentalement (NS, EW, Emergency) & O2 \\
 \bottomrule
 \end{tabularx}
 \label{tab:hypotheses}
 \end{table}
+
 \section{Contributions originales}
 
-Ce travail apporte six contributions originales
-à l'état de l'art, documentées et vérifiables :
+Ce travail propose quatre contributions
+principales, que je détaille ici et qui
+sont approfondies dans les chapitres
+suivants.
 
-\begin{resultbox}{C1 — Premier benchmark YOLO26n sur Raspberry Pi 5}
-À notre connaissance, ce travail constitue le premier
-benchmark empirique de YOLO26n — architecture publiée
-en septembre 2025 — sur Raspberry Pi 5 dans un contexte
-de gestion du trafic urbain, comparant les formats
-FP32 et INT8 sur CPU ARM Cortex-A76.
-\end{resultbox}
+La première contribution (\textbf{C1}) est
+un benchmark empirique comparatif de six
+architectures YOLO — YOLOv8, YOLOv11 et
+YOLO26 en variantes nano et small, aux
+formats FP32 et INT8 — directement sur
+Raspberry Pi 5. Ce benchmark documente
+des résultats que la littérature existante
+ne couvre pas pour cette combinaison
+matérielle et logicielle.
 
-\vspace{0.3cm}
+La deuxième (\textbf{C2}) est la construction
+d'un dataset hybride de 6\,761 images
+combinant le Bellevue Traffic Video Dataset,
+des données CityPersons et des vidéos
+filmées localement à Lqliaa avec un drone
+DJI Mini 2. Ce dataset est construit selon
+une méthodologie rigoureuse pour éviter
+la fuite de données entre les splits
+d'entraînement et de test.
 
-\begin{resultbox}{C2 — Optimisation précision-vitesse simultanée}
-Contrairement aux travaux existants qui privilégient
-soit la précision (architectures lourdes sur GPU),
-soit la vitesse (modèles très allégés avec perte
-de mAP), notre approche combine un modèle accuracy
-\textbf{YOLO26n Step 3 960} atteignant
-\textbf{79,2\% mAP50 test}; pour le déploiement
-embarqué, la famille YOLO26n nano est validée à
-\textbf{7,6 FPS réels} sur Raspberry Pi 5.
-\end{resultbox}
+La troisième (\textbf{C3}) est un pipeline
+complet de perception, anonymisation et
+décision adaptative déployé sur un dispositif
+unique — le Raspberry Pi 5 — sans dépendance
+cloud. Ce pipeline intègre six modules
+interconnectés, avec l'anonymisation
+Privacy-by-Design positionnée avant le
+tracking.
 
-\vspace{0.3cm}
-
-\begin{resultbox}{C3 — Dataset hybride avec données locales marocaines}
-Face à l'absence de datasets publics annotés
-représentatifs du contexte urbain marocain,
-ce travail constitue et documente un dataset
-hybride de \textbf{6 761 images} combinant
-sources internationales et données locales
-collectées à \textbf{Lqliaa, Agadir}.
-Le dataset final contient notamment
-\textbf{23 096 instances person}, utilisées pour
-renforcer la couverture d'anonymisation.
-\end{resultbox}
-
-\vspace{0.3cm}
-
-\begin{resultbox}{C4 — Pipeline complet embarqué sur dispositif unique}
-Ce travail propose un pipeline complet
-intégrant perception, anonymisation et décision
-adaptative sur un \textbf{dispositif unique}
-(Raspberry Pi 5), sans recours au Cloud,
-validant ainsi la faisabilité d'une architecture
-entièrement embarquée pour la gestion intelligente
-du trafic urbain.
-\end{resultbox}
-
-\vspace{0.3cm}
-
-\begin{resultbox}{C5 — Décision adaptative déterministe embarquée}
-Le module de décision MDP à politique déterministe
-proposé offre une alternative computationnellement
-légère aux approches par Apprentissage par
-Renforcement, compatible avec les contraintes
-CPU ARM du Raspberry Pi 5, tout en garantissant
-la priorité absolue aux véhicules d'urgence.
-\end{resultbox}
-
-\vspace{0.3cm}
-
-\begin{resultbox}{C6 — Privacy-by-Design sur Edge Device}
-L'anonymisation des piétons est appliquée
-\textbf{immédiatement après la détection},
-avant tout traitement ultérieur, selon le principe
-Privacy-by-Design. Le système floute
-\textbf{100\% des boîtes détectées} de classe
-\textit{person} avant tracking. La limite restante
-concerne les personnes non détectées par le modèle,
-ce qui est explicitement documenté dans l'évaluation.
-\end{resultbox}
-
-\vspace{0.5cm}
+La quatrième (\textbf{C4}) est l'intégration
+d'un module de décision MDP déterministe,
+léger et explicable, adapté aux contraintes
+CPU d'un dispositif embarqué, avec priorité
+absolue aux véhicules d'urgence.
 
 \begin{table}[H]
 \centering
-\caption{Synthèse des contributions originales}
+\caption{Synthèse des contributions}
 \begin{tabularx}{\textwidth}{clX}
 \toprule
 \textbf{C} & \textbf{Contribution} &
-\textbf{Élément distinctif} \\
+\textbf{Ce que ça apporte concrètement} \\
 \midrule
-C1 & Benchmark YOLO26n Pi 5 &
-Premier test empirique sur ce hardware \\
-C2 & Précision + vitesse &
-0,792 mAP50 test; YOLO26n nano à 7,6 FPS Pi 5 \\
-C3 & Dataset marocain &
-6 761 images, 23 096 instances person \\
-C4 & Pipeline complet embarqué &
-Perception + anonymisation + décision \\
-C5 & Décision MDP déterministe &
-Légère, temps réel, priorité urgence \\
-C6 & Privacy-by-Design edge &
-100\% des détections person floutées \\
+C1 & Benchmark YOLO26n sur Pi 5 &
+Données empiriques sur un hardware
+non documenté pour ce cas d'usage \\
+C2 & Dataset hybride marocain &
+6\,761 images avec contexte local Agadir,
+split sans fuite de données \\
+C3 & Pipeline embarqué complet &
+Perception + anonymisation + décision
+sur Pi 5 sans cloud \\
+C4 & Décision MDP déterministe &
+Module léger, explicable, compatible
+CPU ARM, priorité urgence garantie \\
 \bottomrule
 \end{tabularx}
 \label{tab:contributions}
 \end{table}
-\newpage
-\section{Planification et méthodologie}
 
-\subsection{Méthodologie de travail}
+\section{Méthodologie et planification}
 
-Ce projet a été conduit selon une méthodologie
-structurée s'appuyant sur des pratiques de
-traçabilité expérimentale et sur une couche
-\textbf{DataOps/MLOps légère}. L'objectif n'est
-pas de prétendre à une infrastructure industrielle
-complète, mais de rendre explicites les versions
-du dataset, les paramètres d'entraînement, les
-métriques finales et les artefacts de déploiement.
-Cette traçabilité est matérialisée par
-\texttt{dvc.yaml}, \texttt{dvc.lock},
-\texttt{params.yaml},
-\texttt{metrics/final\_yolo26n\_step3\_960.json},
-un artefact dataset suivi par DVC, et une
-journalisation MLflow locale adossée à
-\path{mlflow.db}.
+\subsection{Comment ce projet a été conduit}
+
+Ce projet a suivi une progression en cinq
+phases. La première a été la recherche
+bibliographique : identifier les travaux
+existants sur la détection embarquée, la
+gestion adaptative des feux et l'anonymisation
+vidéo, pour comprendre ce qui existe et
+ce qui manque.
+
+La deuxième phase a été la construction
+du dataset. C'est là que j'ai passé le
+plus de temps, et c'est là aussi que j'ai
+rencontré le problème le plus difficile
+de ce projet : il n'existe pas de dataset
+public adapté au contexte de surveillance
+d'intersection avec l'angle de caméra fixe
+utilisé dans les systèmes réels. Les
+datasets existants comme VisDrone utilisent
+des vues aériennes de drone qui ne
+correspondent pas aux conditions d'une
+caméra fixe installée en hauteur sur un
+poteau. J'ai dû construire une solution
+hybride.
+
+La troisième phase a été l'entraînement
+et le benchmark des modèles, conduits
+sur Google Colab Pro avec un GPU NVIDIA
+A100 pour la précision, puis directement
+sur Raspberry Pi 5 pour les mesures de
+débit réel.
+
+La quatrième phase a été l'implémentation
+du pipeline complet, module par module,
+avec le dashboard Flask pour visualiser
+et valider les résultats.
+
+La cinquième phase a été la rédaction,
+conduite en parallèle avec les derniers
+tests pour intégrer les résultats réels
+au fur et à mesure.
+
+Pour assurer la reproductibilité, j'ai
+utilisé MLflow en local pour journaliser
+les paramètres d'entraînement et les
+métriques finales, et un fichier
+\texttt{params.yaml} centralisé pour
+tous les hyperparamètres du pipeline.
 
 \begin{table}[H]
 \centering
-\caption{Outils utilisés pour la traçabilité expérimentale}
+\caption{Outils utilisés dans le projet}
 \begin{tabularx}{\textwidth}{llX}
 \toprule
 \textbf{Outil} & \textbf{Usage} &
-\textbf{Justification} \\
+\textbf{Rôle dans le projet} \\
 \midrule
-Git/GitHub & Versioning code et gestion de projet &
-Branches \texttt{main}/\texttt{develop}, historique des commits
-et préparation des livrables stables \\
-Pipeline DVC & DataOps dataset &
-Suivi du dataset final et formalisation des étapes :
-split sans fuite, ajout CityPersons et crops tiny persons \\
-MLflow local & MLOps expérimental &
-Journalisation SQLite des paramètres, métriques
-et artefacts finaux \\
-YAML/JSON & Configuration et métriques &
-Paramètres reproductibles et résultats finaux
-lisibles par humains et scripts \\
-Google Colab Pro & Fine-tuning &
-GPU NVIDIA A100-SXM4-40GB \\
-Ultralytics & Entraînement et validation &
-Courbes, métriques, poids \texttt{best.pt} \\
-Roboflow & Annotation &
-Dataset Lqliaa et sources externes \\
+Google Colab Pro & Entraînement &
+GPU A100 pour le fine-tuning YOLO26n \\
+Ultralytics & Framework ML &
+Entraînement, métriques, export ONNX \\
 ONNX Runtime & Déploiement &
 Inférence CPU sur Raspberry Pi 5 \\
-OpenCV + Flask & Pipeline et dashboard &
-Traitement vidéo, anonymisation et supervision \\
+Roboflow & Annotation &
+Annotation des vidéos Lqliaa \\
+MLflow local & Traçabilité &
+Journalisation des runs et artefacts \\
+OpenCV & Vision &
+Lecture vidéo et traitement des frames \\
+Flask & Dashboard &
+Interface de supervision temps réel \\
 \bottomrule
 \end{tabularx}
-\label{tab:mlops}
+\label{tab:outils}
 \end{table}
 
-Dans cette organisation, la partie \textbf{DataOps}
-correspond à la traçabilité des transformations du
-dataset, la partie \textbf{MLOps} au suivi des
-expériences et des métriques, et la partie
-\textbf{DevOps} au passage reproductible du modèle
-entraîné vers le pipeline embarqué ONNX + Flask.
-Le code source et le rapport sont structurés dans
-un dépôt GitHub avec une branche \texttt{main}
-réservée aux versions stables et une branche
-\texttt{develop} utilisée pour l'intégration des
-corrections, scripts, figures et évolutions du
-pipeline.
-Les données volumineuses restent hors Git ; le
-dataset final est suivi par DVC via
-\path{data/dataset/dataset_step3_tiny_person_crops.dvc},
-et l'expérience finale est journalisée dans MLflow
-via \path{mlflow.db}.
-
-La démarche scientifique adoptée repose sur
-un processus itératif en cinq étapes :
-
-\begin{enumerate}
-    \item \textbf{Recherche bibliographique :}
-    sélection et analyse de 12 articles
-    scientifiques Q1-Q4 couvrant les six
-    piliers thématiques du projet.
-
-    \item \textbf{Expérimentation contrôlée :}
-    benchmark empirique de trois familles
-    YOLO (v8, v11 et v26), en variantes nano
-    et small, sur GPU puis sur Raspberry Pi 5.
-
-    \item \textbf{Validation par hypothèses :}
-    chaque décision technique est ancrée
-    dans une hypothèse vérifiable empiriquement.
-
-    \item \textbf{Traçabilité DataOps/MLOps :}
-    formalisation des étapes dataset dans
-    \texttt{dvc.yaml}, centralisation des
-    hyperparamètres dans \texttt{params.yaml}
-    et conservation des métriques finales au
-    format JSON.
-
-    \item \textbf{Déploiement progressif :}
-    développement sur Mac, export ONNX,
-    puis déploiement sur Raspberry Pi 5.
-\end{enumerate}
-\newpage
 \subsection{Planification du projet}
 
-Le projet s'est déroulé de \textbf{mars 2026}
-à \textbf{juin 2026}, organisé en huit phases
-séquentielles illustrées par le diagramme
-de Gantt en Figure~\ref{fig:gantt}.
+Le projet s'est déroulé sur quatre mois,
+de mars à juin 2026, avec des phases qui
+se chevauchent parce que les résultats
+du benchmark ont directement influencé
+les choix de conception du pipeline,
+et les tests terrain ont alimenté la
+rédaction en continu.
 
 \begin{figure}[H]
 \centering
-\resizebox{0.96\textwidth}{!}{%
+\resizebox{0.92\textwidth}{!}{%
 \begin{tikzpicture}[
   font=\small,
   month/.style={
@@ -546,104 +479,96 @@ de Gantt en Figure~\ref{fig:gantt}.
     font=\scriptsize\bfseries,
     text=white
   },
-  label/.style={font=\scriptsize, align=right, text width=3.9cm},
+  label/.style={font=\scriptsize, align=right,
+    text width=3.9cm},
   gridline/.style={DarkGray!25, line width=0.35pt}
 ]
 
-% Axe temporel
 \foreach \x/\m in {0/Mars,2.25/Avril,4.5/Mai,6.75/Juin} {
   \node[month] at (\x,0) {\m};
   \draw[gridline] (\x-1.125,-0.40) -- (\x-1.125,-5.85);
 }
 \draw[gridline] (7.875,-0.40) -- (7.875,-5.85);
 
-% Lignes des tâches
-\foreach \y in {-0.95,-1.55,-2.15,-2.75,-3.35,-3.95,-4.55,-5.15} {
+\foreach \y in {-0.95,-1.55,-2.15,-2.75,-3.35,
+                -3.95,-4.55,-5.15} {
   \draw[gridline] (-6.25,\y-0.28) -- (7.9,\y-0.28);
 }
 
 \node[label] at (-4.15,-0.95) {État de l'art};
-\node[task, fill=PrimaryBlue, minimum width=2.95cm] at (-0.25,-0.95) {};
+\node[task, fill=PrimaryBlue,
+  minimum width=2.95cm] at (-0.25,-0.95) {};
 
 \node[label] at (-4.15,-1.55) {Conception M1--M6};
-\node[task, fill=PrimaryBlue!82, minimum width=2.55cm] at (1.00,-1.55) {};
+\node[task, fill=PrimaryBlue!82,
+  minimum width=2.55cm] at (1.00,-1.55) {};
 
 \node[label] at (-4.15,-2.15) {Dataset et annotation};
-\node[task, fill=AccentGreen!82!black, minimum width=3.45cm] at (2.00,-2.15) {};
+\node[task, fill=AccentGreen!82!black,
+  minimum width=3.45cm] at (2.00,-2.15) {};
 
 \node[label] at (-4.15,-2.75) {Fine-tuning YOLO26n};
-\node[task, fill=AccentGreen!70!black, minimum width=2.85cm] at (3.25,-2.75) {};
+\node[task, fill=AccentGreen!70!black,
+  minimum width=2.85cm] at (3.25,-2.75) {};
 
 \node[label] at (-4.15,-3.35) {Pipeline embarqué};
-\node[task, fill=AccentOrange, minimum width=3.10cm] at (4.40,-3.35) {};
+\node[task, fill=AccentOrange,
+  minimum width=3.10cm] at (4.40,-3.35) {};
 
-\node[label] at (-4.15,-3.95) {Dashboard et anonymisation};
-\node[task, fill=AccentOrange!88!black, minimum width=2.55cm] at (5.20,-3.95) {};
+\node[label] at (-4.15,-3.95)
+  {Dashboard et anonymisation};
+\node[task, fill=AccentOrange!88!black,
+  minimum width=2.55cm] at (5.20,-3.95) {};
 
 \node[label] at (-4.15,-4.55) {Benchmark Pi 5};
-\node[task, fill=red!65, minimum width=1.85cm] at (6.35,-4.55) {};
+\node[task, fill=red!65,
+  minimum width=1.85cm] at (6.35,-4.55) {};
 
 \node[label] at (-4.15,-5.15) {Rédaction et validation};
-\node[task, fill=DarkGray, minimum width=3.05cm] at (6.10,-5.15) {};
+\node[task, fill=DarkGray,
+  minimum width=3.05cm] at (6.10,-5.15) {};
 
 \node[
-  draw=DarkGray!45,
-  fill=white,
-  rounded corners=4pt,
-  font=\scriptsize,
-  align=center,
-  text width=8.9cm
+  draw=DarkGray!45, fill=white,
+  rounded corners=4pt, font=\scriptsize,
+  align=center, text width=8.9cm
 ] at (2.15,-6.10)
-{Lecture : les tâches se chevauchent volontairement, car les résultats
-du benchmark et du dashboard ont alimenté directement la rédaction finale.};
+{Les phases se chevauchent volontairement :
+les résultats du benchmark ont alimenté
+directement les choix du pipeline et la rédaction.};
 \end{tikzpicture}}
 \caption{Diagramme de Gantt — Planification du projet}
 \label{fig:gantt}
 \end{figure}
-\newpage
-% ── Section 1.8 ──────────────────────────────────────────────
+
 \section{Organisation du mémoire}
 
-Ce mémoire est structuré en sept chapitres
-complémentaires, dont l'enchaînement reflète
-la démarche scientifique adoptée :
+Ce mémoire est structuré en sept chapitres.
 
-\textbf{Le Chapitre 2} présente l'état de l'art
-à travers six piliers thématiques. Il expose
-les fondements théoriques de la détection
-d'objets (approches one-stage et two-stage,
-évolution de YOLO v1 à v26), de l'Edge AI
-et de l'optimisation embarquée, des techniques
-de protection des données personnelles,
-et de la décision adaptative par processus
-de Markov. Il se conclut par l'identification
-du gap scientifique que ce travail comble.
+Le \textbf{Chapitre 2} présente l'état de l'art :
+détection d'objets, architecture YOLO, Edge AI,
+protection des données personnelles et décision
+adaptative. Il se conclut par l'identification
+du gap que ce travail adresse.
 
-\textbf{Le Chapitre 3} présente l'analyse
-des besoins et la conception du système.
-Il formalise l'architecture du pipeline M1--M6,
-le modèle MDP de décision adaptative avec
-ses formules mathématiques, et justifie
-chaque choix technologique par rapport
-à l'état de l'art.
+Le \textbf{Chapitre 3} présente l'analyse des
+besoins et la conception du système : architecture
+du pipeline M1--M6, formalisation MDP et
+justification des choix technologiques.
 
-\textbf{Le Chapitre 4} détaille l'implémentation
-complète du système : construction du dataset
-hybride, fine-tuning des trois architectures
-YOLO, benchmarks sur GPU et Raspberry Pi 5,
-et développement de chaque module du pipeline.
+Le \textbf{Chapitre 4} détaille l'implémentation :
+construction du dataset, benchmark des modèles
+sur GPU et sur Pi 5, et développement de chaque
+module.
 
-\textbf{Le Chapitre 5} présente les résultats
-expérimentaux et valide les cinq hypothèses
-de recherche à travers des métriques précises,
-démontrant le fonctionnement du pipeline
-complet sur données réelles marocaines.
+Le \textbf{Chapitre 5} présente les résultats
+expérimentaux et la validation des cinq hypothèses
+de recherche.
 
-\textbf{Le Chapitre 6} discute les contributions,
-les limites du système et les perspectives
-de recherche futures.
+Le \textbf{Chapitre 6} discute les contributions,
+les limites identifiées et les perspectives
+d'amélioration.
 
-\textbf{Le Chapitre 7} présente la conclusion
-générale du mémoire, synthétise les résultats
-obtenus et répond explicitement à la problématique
-posée.
+Le \textbf{Chapitre 7} conclut le mémoire et
+répond explicitement à la question de recherche
+posée dans ce chapitre.

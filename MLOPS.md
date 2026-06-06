@@ -1,51 +1,15 @@
-# DataOps / MLOps / DevOps local
+# MLOps local et benchmark Raspberry Pi 5
 
-Ce projet utilise une couche locale légère pour tracer le dataset final, les paramètres, les métriques, les artefacts du modèle et le versioning du code.
+Ce projet utilise une couche locale légère pour tracer les paramètres, les
+métriques, les artefacts du modèle et les mesures Raspberry Pi 5. DVC et GitHub
+ne sont pas retenus comme preuves finales dans le rapport ; les preuves
+principales sont MLflow, les artefacts ONNX/PT, les résultats JSON/CSV, le
+dashboard et les benchmarks sur Raspberry Pi 5.
 
 ## Installation
 
 ```bash
 .venv/bin/python -m pip install -r requirements-mlops.txt
-```
-
-## GitHub
-
-Le code source et le rapport sont versionnés dans GitHub avec deux branches :
-
-```text
-main    -> version stable pour soutenance / livrable
-develop -> intégration des corrections, figures et évolutions
-```
-
-Les données volumineuses, vidéos, poids `.pt`, exports `.onnx`, cache DVC et runs MLflow ne sont pas poussés dans GitHub. Ils restent documentés par `dvc.yaml`, `dvc.lock`, `params.yaml` et `metrics/`.
-
-Voir :
-
-```text
-docs/GITHUB_WORKFLOW.md
-docs/SCREENSHOTS_COMMANDS.md
-```
-
-## DVC
-
-Le dépôt DVC est initialisé en mode local sans Git (`no_scm = true`). Le wrapper `scripts/run_dvc.sh` force le cache DVC dans le projet pour éviter les problèmes de permissions macOS.
-
-```bash
-scripts/run_dvc.sh dag
-scripts/run_dvc.sh status
-scripts/run_dvc.sh metrics show
-```
-
-Artefact dataset suivi par DVC :
-
-```text
-data/dataset/dataset_step3_tiny_person_crops.dvc
-```
-
-Dataset final suivi :
-
-```text
-data/dataset/dataset_step3_tiny_person_crops
 ```
 
 ## MLflow
@@ -75,8 +39,12 @@ Ouvrir l'interface MLflow :
   --backend-store-uri "sqlite:///$(pwd)/mlflow.db" \
   --default-artifact-root "file://$(pwd)/mlruns" \
   --host 127.0.0.1 \
-  --port 5056
+  --port 5057
 ```
+
+Dans MLflow 3.x, sélectionner `Model training` en haut à gauche. La
+section `GenAI` affiche les traces LLM et peut donc rester à zéro pour ce
+projet, ce qui est normal.
 
 Run final actuel :
 
@@ -86,13 +54,13 @@ YOLO26n-Step3-960-final-6582f915
 
 ## Artefacts modèle
 
-Le fichier PyTorch final est synchronisé localement et suivi par DVC :
+Le fichier PyTorch final est synchronisé localement :
 
 ```text
 models/downloads/YOLO26n_step3_960_best.pt
 ```
 
-L'artefact utilisé pour le déploiement Raspberry Pi est l'export ONNX suivi par DVC :
+L'artefact utilisé pour le déploiement Raspberry Pi est l'export ONNX :
 
 ```text
 models/downloads/YOLO26n_step3_960_best.onnx
@@ -220,11 +188,9 @@ Pour tester un vrai `800x800`, un second artefact ONNX est exporté depuis les p
 models/downloads/YOLO26n_step3_800_from960_best.onnx
 ```
 
-Reproduction locale :
-
-```bash
-scripts/run_dvc.sh repro export_yolo26n_step3_800_from960
-```
+Cet export est conservé comme artefact expérimental pour le benchmark
+Raspberry Pi 5. La vérification importante pour le rapport est la dimension
+d'entrée du modèle et son résultat sur la vidéo de test.
 
 Vérification attendue :
 
@@ -280,7 +246,7 @@ L'export 800 améliore nettement le débit par rapport au 960 statique : `3.94 F
 Le pipeline accepte maintenant `--vid-stride N`. Avec `--vid-stride 2`, une frame source sur deux est inférée. Le rapport produit deux mesures :
 
 - `FPS moyen` : débit réel des inférences IA.
-- `FPS effectif` : couverture vidéo source, soit environ `FPS moyen x vid_stride`.
+- `Couverture vidéo` : nombre de frames source parcourues par seconde, soit environ `débit d'analyse x vid_stride`.
 
 Avant de tester le stride sur le Pi, copier le nouveau `main.py` :
 
@@ -356,11 +322,11 @@ python3 -m pipeline.main \
 
 Résultats mesurés sur Raspberry Pi 5 :
 
-| Configuration | Frames source | Frames IA | FPS moyen IA | FPS effectif source | Latence approx. | Anonymisés | Tracks | Décision |
+| Configuration | Frames source | Frames IA | Débit d’analyse (frames analysées/s) | Couverture vidéo (frames source/s) | Latence approx. | Anonymisés | Tracks | Décision |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | ONNX 800 FP32, sans ROI, stride 1 | 300 | 300 | 3.94 | 3.94 | 254 ms/frame | 1022 | 199 | Retenu si chaque frame doit être inférée |
 | ONNX 800 FP32, ROI personnes toutes les 10 frames, stride 1 | 300 | 300 | 3.45 | 3.45 | 290 ms/frame | 1440 | 290 | Retenu pour anonymisation renforcée |
-| ONNX 800 FP32, sans ROI, stride 2 | 300 | 150 | 4.28 | 7.84 | 234 ms/inférence | 541 | 132 | Meilleur compromis FPS/couverture |
+| ONNX 800 FP32, sans ROI, stride 2 | 300 | 150 | 4.28 | 7.84 | 234 ms/inférence | 541 | 132 | Meilleur compromis analyse/couverture |
 | ONNX 800 INT8 dynamique, sans ROI, stride 1 | 300 | 300 | 2.06 | 2.06 | 485 ms/frame | 1140 | 210 | Non retenu |
 | ONNX 800 INT8 dynamique, sans ROI, stride 2 | 300 | 150 | 1.97 | 3.76 | 508 ms/inférence | 617 | 138 | Non retenu |
 
@@ -369,4 +335,4 @@ Interprétation :
 - Le meilleur débit brut sans sauter de frame reste l'ONNX 800 FP32 sans ROI : `3.94 FPS`.
 - Le meilleur compromis pour dépasser le seuil de `5 FPS` en couverture vidéo est l'ONNX 800 FP32 avec `--vid-stride 2` : `7.84 frames source/s`.
 - L'INT8 dynamique n'accélère pas ce pipeline sur Raspberry Pi 5 avec ONNX Runtime CPU. Malgré une taille de fichier plus faible, le runtime exécute ce graphe plus lentement que le FP32.
-- Pour le rapport, il faut distinguer honnêtement `FPS moyen IA` et `FPS effectif source`. Le stride améliore la couverture vidéo, mais seulement une frame source sur deux est réellement inférée.
+- Pour le rapport, il faut distinguer honnêtement `Débit d’analyse` et `Couverture vidéo`. Le stride améliore la couverture vidéo, mais seulement une frame source sur deux est réellement inférée.

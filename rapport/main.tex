@@ -57,25 +57,6 @@
 \usepackage{wrapfig}
 \graphicspath{{figures/}}
 \DeclareGraphicsExtensions{.pdf,.png,.jpg,.jpeg}
-\setkeys{Gin}{keepaspectratio}
-\captionsetup[figure]{
-  font=small,
-  labelfont=bf,
-  justification=centering,
-  singlelinecheck=false
-}
-\captionsetup[table]{
-  font=small,
-  labelfont=bf,
-  justification=centering,
-  singlelinecheck=false
-}
-\captionsetup[subfigure]{
-  font=small,
-  labelfont=bf,
-  justification=centering,
-  singlelinecheck=false
-}
 
 % ── Blocs colorés ────────────────────────────────────────────
 \usepackage{tcolorbox}
@@ -155,10 +136,13 @@
 
 % ── Liens et références ───────────────────────────────────────
 \usepackage[
-  colorlinks = true,
-  linkcolor  = PrimaryBlue,
-  citecolor  = AccentGreen,
-  urlcolor   = PrimaryBlue
+  colorlinks  = true,
+  linkcolor   = PrimaryBlue,
+  citecolor   = AccentGreen,
+  urlcolor    = PrimaryBlue,
+  pdftitle    = {Gestion Intelligente des Feux de Circulation dans une Smart City via Edge AI},
+  pdfauthor   = {Mouad ASSARGUAL},
+  pdfsubject  = {Memoire de Fin Etudes Master IA Embarquee Universite Ibn Zohr}
 ]{hyperref}
 \usepackage[french]{cleveref}
 
@@ -205,6 +189,7 @@
 \listoftables
 
 % ── Chapitres ────────────────────────────────────────────────
+\input{00_abbreviations}
 \include{chapters/ch1_introduction}
 \include{chapters/ch2_etat_art}
 \include{chapters/ch3_conception}
@@ -218,6 +203,6 @@
 
 % ── Annexes ──────────────────────────────────────────────────
 \appendix
-\include{chapters/annexes}
+\input{chapters/annexe_artefacts}
 
 \end{document}

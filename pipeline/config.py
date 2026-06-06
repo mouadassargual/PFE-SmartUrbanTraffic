@@ -68,6 +68,8 @@ PHASE_DURATIONS = {
     'medium'   : 30,
     'max'      : 45,
     'emergency': 45,
+    'pedestrian': 30,
+    'all_red'  : 15,
 }
 
 # Seuils de décision

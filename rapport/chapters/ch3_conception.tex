@@ -5,39 +5,30 @@
 \phantomsection
 \addcontentsline{toc}{section}{Introduction}
 
-Fort des enseignements tirés de l'état de l'art,
-ce chapitre marque le passage de l'analyse
-théorique à la contribution originale de ce travail.
-Le tableau de synthèse du Chapitre~\ref{ch:etat_art}
-a mis en évidence un gap fondamental : l'absence
-de pipeline complet répondant simultanément aux
-exigences de détection temps réel, de protection
-des données personnelles et de déploiement sur
-dispositif embarqué à ressources limitées dans
-le contexte des smart cities marocaines.
+Ce chapitre décrit les choix de conception
+du système. Le Chapitre~\ref{ch:etat_art}
+a montré qu'à notre connaissance, aucun travail
+publié ne combine détection temps réel,
+anonymisation Privacy-by-Design et décision
+adaptative sur un seul dispositif embarqué
+dans le contexte marocain. Ce chapitre explique
+comment on a structuré le système pour répondre
+à ces trois contraintes simultanément.
 
-Ce chapitre présente l'architecture globale
-du système conçu pour combler ce gap, structurée
-autour de six modules interdépendants : acquisition
-vidéo, détection multi-classes en temps réel,
-anonymisation Privacy-by-Design, tracking et
-comptage, décision adaptative par MDP, et
-visualisation via dashboard. Chaque choix
-architectural est motivé par trois contraintes
-fondamentales et non négociables :
-\textbf{temps réel}, \textbf{déploiement embarqué}
-et \textbf{conformité à la Loi 09-08}.
-
-Le chapitre se conclut par la validation de
-l'architecture sur des scénarios représentatifs
-du contexte urbain marocain.
+L'architecture retenue s'articule autour de
+six modules interconnectés. Chaque choix —
+du modèle de détection au tracker, du format
+d'export au noyau gaussien — est motivé par
+des contraintes concrètes : le CPU ARM du
+Raspberry Pi 5, la Loi 09-08, et l'exigence
+de fonctionnement en temps réel.
 
 \section{Analyse des besoins}
 
 \subsection{Besoins fonctionnels}
 
-Le système développé doit satisfaire
-cinq fonctions essentielles et séquentielles :
+Le système doit remplir cinq fonctions
+qui s'enchaînent séquentiellement :
 
 \begin{table}[H]
 \centering
@@ -49,37 +40,33 @@ cinq fonctions essentielles et séquentielles :
 \textbf{Description} \\
 \midrule
 BF1 & Acquisition &
-Capturer le flux vidéo d'une intersection
-depuis un angle de surveillance réel
-(30--60°), compatible avec les
-infrastructures de gestion du trafic urbain. \\
+Lire un flux vidéo d'intersection depuis
+un fichier local, frame par frame,
+compatible avec le pipeline de traitement. \\
 
 BF2 & Détection &
-Identifier et localiser en temps réel les
-objets de six classes : voitures, bus,
-camions, motos, piétons et véhicules
+Identifier et localiser en temps réel
+les objets de six classes : voitures,
+bus, camions, motos, piétons et véhicules
 d'urgence, avec un score de confiance
-associé à chaque détection. \\
+par détection. \\
 
 BF3 & Anonymisation &
-Appliquer automatiquement un filtre de
-protection sur toute personne détectée,
-immédiatement après la détection et avant
-tout traitement ultérieur, conformément
-au principe Privacy-by-Design. \\
+Flouter automatiquement chaque piéton
+détecté, immédiatement après la détection
+et avant tout traitement ultérieur,
+conformément à la Loi 09-08. \\
 
 BF4 & Décision &
-Calculer la phase de feux optimale selon
-la densité et le type des objets détectés,
-en accordant une priorité pondérée aux
-piétons et une priorité absolue aux
-véhicules d'urgence. \\
+Calculer la phase de feux à activer
+selon les densités détectées par zone,
+avec priorité pondérée aux piétons et
+priorité absolue aux véhicules d'urgence. \\
 
 BF5 & Visualisation &
-Afficher en temps réel le flux vidéo
-annoté, les statistiques de détection
-par zone et l'état courant des feux
-via un dashboard accessible en réseau. \\
+Afficher le flux annoté, les statistiques
+par zone et l'état des feux via un
+dashboard accessible en réseau local. \\
 \bottomrule
 \end{tabularx}
 \label{tab:besoins_fonctionnels}
@@ -87,9 +74,9 @@ via un dashboard accessible en réseau. \\
 
 \subsection{Besoins non-fonctionnels}
 
-Au-delà des fonctions métier, le système
-doit respecter des contraintes qualitatives
-strictes :
+Au-delà des fonctions métier, plusieurs
+contraintes qualitatives encadrent
+l'architecture :
 
 \begin{table}[H]
 \centering
@@ -99,38 +86,30 @@ strictes :
 \textbf{BNF} &
 \textbf{Critère} &
 \textbf{Exigence} &
-\textbf{Valeur cible} \\
+\textbf{Cible} \\
 \midrule
 BNF1 & Temps réel &
-Traitement de chaque frame dans un délai
-compatible avec la gestion du trafic &
+Cadence suffisante pour une décision
+cohérente avec le trafic réel &
 $\geq$ 5 FPS \\
 
 BNF2 & Précision &
-Taux de détection suffisant pour garantir
-l'anonymisation de la quasi-totalité
-des piétons &
-mAP50 test $\geq$ 75\% \\
+Détection suffisante pour couvrir
+la quasi-totalité des piétons &
+mAP50 $\geq$ 75\% \\
 
 BNF3 & Conformité légale &
-Respect de la Loi 09-08 relative à la
-protection des données personnelles &
+Respect de la Loi 09-08 &
 100\% \\
 
 BNF4 & Embarquabilité &
-Fonctionnement sur CPU ARM sans GPU,
-avec la mémoire disponible du Pi 5 &
+Fonctionne sur CPU ARM sans GPU &
 RAM $\leq$ 4 GB \\
 
-BNF5 & Disponibilité &
-Fonctionnement continu sans interruption
-pendant toute la durée de surveillance &
-24h/7j \\
-
-BNF6 & Maintenabilité &
-Code modulaire permettant la mise à jour
-indépendante de chaque composant &
-Architecture MVC \\
+BNF5 & Maintenabilité &
+Modules indépendants, modifiables
+séparément &
+Architecture modulaire \\
 \bottomrule
 \end{tabularx}
 \label{tab:besoins_non_fonctionnels}
@@ -138,72 +117,67 @@ Architecture MVC \\
 
 \subsection{Contraintes matérielles}
 
-Le déploiement sur \textbf{Raspberry Pi 5 8GB}
-impose des contraintes architecturales
-directes sur chaque choix de conception :
+Le Raspberry Pi 5 8GB est le dispositif
+cible. Ses caractéristiques imposent
+des choix architecturaux directs :
 
 \begin{figure}[H]
 \centering
-\resizebox{0.98\textwidth}{!}{%
+\resizebox{0.92\textwidth}{!}{%
 \begin{tikzpicture}[
-  box/.style={draw, rounded corners=4pt,
-    text centered, align=center, font=\small,
-    minimum width=4cm,
-    minimum height=0.8cm},
-  constraint/.style={draw=AccentOrange,
-    fill=AccentOrange!10, rounded corners=4pt,
-    text centered, align=center, font=\scriptsize,
-    minimum width=3.8cm,
-    minimum height=0.7cm},
-  solution/.style={draw=AccentGreen,
-    fill=AccentGreen!10, rounded corners=4pt,
-    text centered, align=center, font=\scriptsize,
-    minimum width=3.8cm,
-    minimum height=0.7cm}
+  constraint/.style={
+    draw=AccentOrange,
+    fill=AccentOrange!10,
+    rounded corners=4pt,
+    align=center, font=\scriptsize,
+    minimum width=4.2cm,
+    minimum height=0.75cm},
+  solution/.style={
+    draw=AccentGreen,
+    fill=AccentGreen!10,
+    rounded corners=4pt,
+    align=center, font=\scriptsize,
+    minimum width=4.2cm,
+    minimum height=0.75cm},
+  arrow/.style={
+    PrimaryBlue,->,thick}
 ]
 
-% Titre colonnes
-\node[font=\small\bfseries,
-      color=AccentOrange] at (0, 0)
-      {Contrainte matérielle};
-\node[font=\small\bfseries,
-      color=AccentGreen] at (6, 0)
-      {Solution architecturale};
+\node[font=\small\bfseries, color=AccentOrange]
+  at (0,0) {Contrainte matérielle};
+\node[font=\small\bfseries, color=AccentGreen]
+  at (6.5,0) {Solution retenue};
 
-% Contraintes
-\node[constraint] at (0,-0.9)  (c1)
-  {CPU ARM Cortex-A76 (pas de GPU)};
-\node[constraint] at (0,-1.8)  (c2)
+\node[constraint] (c1) at (0,-0.95)
+  {CPU ARM Cortex-A76, pas de GPU};
+\node[constraint] (c2) at (0,-1.85)
   {RAM partagée 8 GB};
-\node[constraint] at (0,-2.7)  (c3)
+\node[constraint] (c3) at (0,-2.75)
   {FP16 non supporté nativement};
-\node[constraint] at (0,-3.6)  (c4)
-  {Bande passante limitée};
-\node[constraint] at (0,-4.5)  (c5)
-  {Contrainte thermique ARM};
+\node[constraint] (c4) at (0,-3.65)
+  {Bande passante réseau limitée};
+\node[constraint] (c5) at (0,-4.55)
+  {Risque de throttling thermique};
 
-% Solutions
-\node[solution] at (6,-0.9)  (s1)
+\node[solution] (s1) at (6.5,-0.95)
   {YOLO26n nano + ONNX Runtime};
-\node[solution] at (6,-1.8)  (s2)
-  {Modèle nano FP32 léger};
-\node[solution] at (6,-2.7)  (s3)
+\node[solution] (s2) at (6.5,-1.85)
+  {Modèle nano FP32, ~9.8 MB};
+\node[solution] (s3) at (6.5,-2.75)
   {Export ONNX FP32 retenu};
-\node[solution] at (6,-3.6)  (s4)
-  {MJPEG stream compression};
-\node[solution] at (6,-4.5)  (s5)
-  {Pipeline séquentiel optimisé};
+\node[solution] (s4) at (6.5,-3.65)
+  {Streaming MJPEG compressé};
+\node[solution] (s5) at (6.5,-4.55)
+  {Pipeline séquentiel, pas de
+  parallélisme forcé};
 
-% Flèches
-\foreach \c/\s in {c1/s1,c2/s2,c3/s3,c4/s4,c5/s5}{
-  \draw[PrimaryBlue,->,thick]
-    (\c.east)--(\s.west);
+\foreach \c/\s in
+  {c1/s1,c2/s2,c3/s3,c4/s4,c5/s5}{
+  \draw[arrow] (\c.east) -- (\s.west);
 }
-
-\end{tikzpicture}
-}
-\caption{Contraintes matérielles Raspberry Pi 5
-         et solutions architecturales adoptées}
+\end{tikzpicture}}
+\caption{Contraintes du Raspberry Pi 5
+         et solutions architecturales}
 \label{fig:constraints}
 \end{figure}
 
@@ -211,18 +185,12 @@ directes sur chaque choix de conception :
 
 \subsection{Vue d'ensemble}
 
-Le système développé s'articule autour de
-six modules interconnectés, formant un pipeline
-séquentiel de traitement temps réel.
-L'entrée du système est un flux vidéo capturé
-depuis une caméra de surveillance, et la sortie
-est une décision adaptative de phase de feux
-accompagnée d'une visualisation en temps réel.
-
-
-% ============================================================
-% Figure — Pipeline M1→M6
-% ============================================================
+Le pipeline traite les frames de façon
+séquentielle, de l'acquisition vidéo
+jusqu'à la décision de phase de feux.
+Chaque module reçoit les sorties du
+précédent et transmet les siennes au
+suivant.
 
 \begin{figure}[H]
 \centering
@@ -230,47 +198,64 @@ accompagnée d'une visualisation en temps réel.
 \begin{tikzpicture}[
   font=\small,
   module/.style={
-    draw=PrimaryBlue,
-    fill=PrimaryBlue!8,
+    draw=PrimaryBlue, fill=PrimaryBlue!8,
     rounded corners=6pt,
     minimum width=3.35cm,
     minimum height=1.05cm,
-    align=center,
-    very thick
+    align=center, very thick
   },
   privacy/.style={
-    draw=AccentOrange,
-    fill=AccentOrange!10,
+    draw=AccentOrange, fill=AccentOrange!10,
     rounded corners=6pt,
     minimum width=3.35cm,
     minimum height=1.05cm,
-    align=center,
-    very thick
+    align=center, very thick
   },
   output/.style={
-    draw=AccentGreen,
-    fill=AccentGreen!8,
+    draw=AccentGreen, fill=AccentGreen!8,
     rounded corners=6pt,
     minimum width=3.35cm,
     minimum height=1.05cm,
-    align=center,
-    very thick
+    align=center, very thick
   },
-  arrow/.style={-{Latex[length=3mm]}, line width=1.1pt, color=DarkGray, shorten >=1pt, shorten <=1pt},
-  note/.style={font=\scriptsize, color=DarkGray, align=center, fill=white, inner sep=1.5pt}
+  arrow/.style={
+    -{Latex[length=3mm]},
+    line width=1.1pt,
+    color=DarkGray,
+    shorten >=1pt,
+    shorten <=1pt},
+  note/.style={
+    font=\scriptsize, color=DarkGray,
+    align=center, fill=white,
+    inner sep=1.5pt}
 ]
-\node[module] (m1) at (0,0) {M1\\Acquisition};
-\node[module] (m2) at (5.00,0) {M2\\Détection YOLO};
-\node[privacy] (m4) at (10.00,0) {M4\\Anonymisation};
-\node[module] (m3) at (10.00,-2.05) {M3\\Tracking IoU};
-\node[module] (m5) at (5.00,-2.05) {M5\\Décision MDP};
-\node[output] (m6) at (0,-2.05) {M6\\Dashboard};
 
-\draw[arrow] (m1) -- node[note, above] {frames} (m2);
-\draw[arrow] (m2) -- node[note, above] {bboxes} (m4);
-\draw[arrow] (m4) -- node[note, right=3pt] {frame floutée} (m3);
-\draw[arrow] (m3) -- node[note, above=3pt, text width=1.35cm] {zones\\+ tracks} (m5);
-\draw[arrow] (m5) -- node[note, above=3pt, text width=1.35cm] {phase\\+ durée} (m6);
+\node[module] (m1) at (0,0)
+  {M1\\Acquisition};
+\node[module] (m2) at (5.0,0)
+  {M2\\Détection YOLO};
+\node[privacy] (m4) at (10.0,0)
+  {M4\\Anonymisation};
+\node[module] (m3) at (10.0,-2.05)
+  {M3\\Tracking IoU};
+\node[module] (m5) at (5.0,-2.05)
+  {M5\\Décision MDP};
+\node[output] (m6) at (0,-2.05)
+  {M6\\Dashboard};
+
+\draw[arrow] (m1) --
+  node[note, above] {frames} (m2);
+\draw[arrow] (m2) --
+  node[note, above] {bboxes} (m4);
+\draw[arrow] (m4) --
+  node[note, right=3pt] {frame floutée}
+  (m3);
+\draw[arrow] (m3) --
+  node[note, above=3pt, text width=1.4cm]
+  {zones\\+ densités} (m5);
+\draw[arrow] (m5) --
+  node[note, above=3pt, text width=1.4cm]
+  {phase\\+ durée} (m6);
 
 \node[
   draw=AccentOrange,
@@ -279,66 +264,90 @@ accompagnée d'une visualisation en temps réel.
   align=center,
   font=\scriptsize,
   text width=8.6cm
-] at (5.00,-3.25)
-{\textbf{Point clé Privacy-by-Design :}
-les personnes sont floutées avant le tracking et avant l'affichage dashboard.};
+] at (5.0,-3.25)
+{\textbf{Point clé :} M4 floute les personnes
+avant le tracking et avant l'affichage.
+Aucun pixel identifiable ne circule
+au-delà de M4.};
 \end{tikzpicture}}
-\caption{Pipeline du système de gestion
-         intelligente du trafic — M1 à M6
+\caption{Pipeline du système — M1 à M6
          \textit{(Source : auteur)}}
 \label{fig:pipeline_system}
 \end{figure}
 
-\clearpage
+\subsection{Source vidéo retenue}
 
-% ============================================================
-% Figure — Architecture physique du système
-% ============================================================
+Le pipeline utilise une vidéo du Bellevue
+Traffic Video Dataset stockée localement
+sur le Raspberry Pi 5. Ce choix permet
+de rejouer exactement les mêmes séquences
+pour comparer les modèles, les tailles
+d'entrée et les paramètres de décision.
+La calibration des polygones est faite
+une fois sur une frame de référence,
+puis réutilisée à chaque lancement.
+
+\clearpage
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{%
+\resizebox{0.96\textwidth}{!}{%
 \begin{tikzpicture}[
+  font=\footnotesize,
   block/.style={
     draw=PrimaryBlue, fill=PrimaryBlue!8,
     rounded corners=7pt, align=center,
-    minimum width=3.9cm, minimum height=1.05cm,
-    font=\small\bfseries
+    minimum width=3.35cm,
+    minimum height=0.95cm,
+    font=\footnotesize\bfseries
   },
   module/.style={
     draw=PrimaryBlue!70, fill=white,
     rounded corners=4pt, align=center,
-    minimum width=5.05cm, minimum height=0.82cm,
-    font=\small
+    minimum width=4.70cm,
+    minimum height=0.78cm,
+    font=\footnotesize
   },
   privacy/.style={
     draw=AccentOrange, fill=AccentOrange!10,
     rounded corners=4pt, align=center,
-    minimum width=5.05cm, minimum height=0.82cm,
-    font=\small\bfseries
+    minimum width=4.70cm,
+    minimum height=0.78cm,
+    font=\footnotesize\bfseries
   },
   side/.style={
     draw=AccentGreen, fill=AccentGreen!8,
     rounded corners=6pt, align=center,
-    minimum width=3.9cm, minimum height=1.05cm,
-    font=\small
+    minimum width=3.65cm,
+    minimum height=0.95cm,
+    font=\footnotesize
   },
-  arrow/.style={-{Stealth[length=4.6mm,width=3mm]}, line width=1.35pt, PrimaryBlue},
-  sidearrow/.style={-{Stealth[length=3mm,width=1.9mm]}, thick},
-  label/.style={font=\scriptsize, color=DarkGray, fill=white, inner sep=2pt}
+  arrow/.style={
+    -{Stealth[length=4mm, width=2.5mm]},
+    line width=1.15pt, PrimaryBlue},
+  sidearrow/.style={
+    -{Stealth[length=3mm, width=1.9mm]},
+    thick},
+  label/.style={
+    font=\scriptsize, color=DarkGray,
+    fill=white, inner sep=2pt}
 ]
 
-% Entrée
 \node[block] (cam) at (0,0)
-  {Caméra\\\scriptsize USB / IP};
+  {Vidéo source\\\scriptsize fichier local};
 
-% Raspberry Pi : traitement principal
-\node[module]  (m1) at (6.0,  2.25) {M1 Acquisition};
-\node[module]  (m2) at (6.0,  1.30) {M2 Détection};
-\node[privacy] (m4) at (6.0,  0.35) {M4 Anonymisation};
-\node[module]  (m3) at (6.0, -0.60) {M3 Tracking};
-\node[module]  (m5) at (6.0, -1.55) {M5 Décision};
-\node[module]  (m6) at (6.0, -2.50) {M6 Dashboard};
+\node[module]  (m1) at (5.4, 2.35)
+  {M1 Acquisition};
+\node[module]  (m2) at (5.4, 1.38)
+  {M2 Détection};
+\node[privacy] (m4) at (5.4, 0.41)
+  {M4 Anonymisation};
+\node[module]  (m3) at (5.4,-0.56)
+  {M3 Tracking};
+\node[module]  (m5) at (5.4,-1.53)
+  {M5 Décision};
+\node[module]  (m6) at (5.4,-2.50)
+  {M6 Dashboard};
 
 \begin{scope}[on background layer]
 \node[
@@ -346,57 +355,66 @@ les personnes sont floutées avant le tracking et avant l'affichage dashboard.};
   rounded corners=10pt,
   fit=(m1)(m2)(m4)(m3)(m5)(m6),
   inner xsep=0.55cm, inner ysep=0.75cm,
-  label={[font=\small\bfseries, color=PrimaryBlue]above:Raspberry Pi 5 — traitement embarqué}
+  label={[font=\footnotesize\bfseries,
+    color=PrimaryBlue]above:
+    Raspberry Pi 5 — traitement embarqué}
 ] (rpi) {};
 \end{scope}
 
-% Sorties / ressources
-\node[side] (model) at (13.0,1.30)
-  {\textbf{Modèle ONNX}\\YOLO26n FP32 retenu};
-
-\node[block] (browser) at (13.0,-2.50)
+\node[side] (model) at (11.2,1.38)
+  {\textbf{Modèle ONNX}\\YOLO26n FP32};
+\node[block] (browser) at (11.2,-2.50)
   {Navigateur\\\scriptsize Dashboard local};
 
-% Flux principal
-\draw[arrow] (cam.east) -- node[label, above] {flux vidéo} (rpi.west |- m1);
+\draw[arrow] (cam.east) --
+  node[label, above] {frames}
+  (rpi.west |- m1);
 \draw[arrow] (m1) -- (m2);
 \draw[arrow] (m2) -- (m4);
 \draw[arrow] (m4) -- (m3);
 \draw[arrow] (m3) -- (m5);
 \draw[arrow] (m5) -- (m6);
-\draw[arrow] (m6.east) -- node[label, above] {HTTP / MJPEG} (browser.west);
+\draw[arrow] (m6.east) --
+  node[label, above] {HTTP/MJPEG}
+  (browser.west);
+\draw[sidearrow, AccentGreen] (model.west)
+  -- node[label, above] {inférence}
+  (m2.east);
 
-% Flux secondaire du modèle
-\draw[sidearrow, AccentGreen] (model.west) -- node[label, above] {inférence} (m2.east);
-
-% Note confidentialité séparée
 \node[
   draw=AccentOrange, fill=AccentOrange!6,
   rounded corners=5pt, align=center,
-  text width=10.8cm, font=\scriptsize,
+  text width=9.8cm, font=\scriptsize,
   below=0.85cm of rpi
-] (privacy_note)
-  {Traitement local : images brutes non transmises ; M4 anonymise avant tracking.};
+]
+{Traitement entièrement local :
+aucune image brute ne quitte
+le Raspberry Pi 5.};
 
-\end{tikzpicture}%
-}
+\end{tikzpicture}}
 \caption{Architecture physique du système
-         de gestion intelligente du trafic
          \textit{(Source : auteur)}}
 \label{fig:physical_architecture}
 \end{figure}
 
-\subsection{Ordre du pipeline et justification}
+\subsection{Ordre du pipeline}
 
-L'ordre des modules n'est pas arbitraire.
-Il résulte d'une décision architecturale
-fondée sur le principe \textbf{Privacy-by-Design}
-et les propriétés de notre tracker.
+L'ordre M1→M2→M4→M3→M5→M6 n'est pas
+arbitraire. La position de M4 avant M3
+est une décision architecturale directement
+liée à la Loi 09-08.
 
 \begin{table}[H]
 \centering
 \caption{Description des modules du pipeline}
-\begin{tabularx}{\textwidth}{llXl}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}
+  >{\raggedright\arraybackslash}p{3.2cm}
+  >{\raggedright\arraybackslash}p{2.4cm}
+  >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}p{2.7cm}
+@{}}
 \toprule
 \textbf{Module} &
 \textbf{Entrée} &
@@ -407,27 +425,22 @@ M1 — Acquisition &
 Source vidéo &
 Lecture frame par frame via OpenCV &
 Frame BGR \\
-
 M2 — Détection &
 Frame &
 Inférence YOLO26n ONNX FP32 &
 BBoxes + Classes \\
-
 M4 — Anonymisation &
 Frame + BBoxes &
-Floutage gaussien sur class \textit{person} &
+Floutage gaussien classe \textit{person} &
 Frame anonymisée \\
-
 M3 — Tracking &
 BBoxes &
 IoU matching + comptage par zone &
 Densités \\
-
 M5 — Décision &
 Densités + Types &
-Scoring MDP pondéré $\pi^*(s)$ &
+Scoring MDP $\pi^*(s)$ &
 Phase + Durée \\
-
 M6 — Dashboard &
 Frame + Phase &
 Streaming MJPEG + Flask &
@@ -437,450 +450,318 @@ Interface web \\
 \label{tab:modules}
 \end{table}
 
-\subsection{Justification de l'ordre M4 avant M3}
+\subsection{Pourquoi M4 avant M3}
 
-La question de l'ordre entre l'anonymisation
-(M4) et le tracking (M3) est une décision
-architecturale critique, directement liée
-au principe Privacy-by-Design.
+La question mérite d'être expliquée
+clairement. On aurait pu appliquer
+l'anonymisation après le tracking —
+beaucoup de systèmes le font. On a
+choisi de l'appliquer avant, pour
+deux raisons.
 
-\begin{definitionbox}{Pourquoi M4 précède M3 ?}
-\textbf{Règle Privacy-by-Design :}
-protéger les données personnelles le plus tôt
-possible dans le pipeline — même entre modules
-internes, même si aucun utilisateur ne voit
-les images intermédiaires.
+La première est juridique. La Loi 09-08
+impose de protéger les données personnelles
+dès leur collecte, pas après traitement.
+Même si aucun utilisateur ne voit les
+frames intermédiaires, laisser circuler
+des pixels identifiables entre modules
+internes va à l'encontre de ce principe.
 
-\textbf{Condition de faisabilité :}
-notre tracker M3 est basé sur l'IoU
-(\textit{Intersection over Union}), qui utilise
-uniquement la \textbf{position} des boîtes
-englobantes. Il ne dépend pas des pixels
-du visage ni de caractéristiques visuelles.
-Le floutage gaussien appliqué avant le tracking
-n'affecte donc aucunement les performances
-de suivi.
-
-\textbf{Conséquence :}
-aucune donnée personnelle identifiable
-ne circule dans le pipeline après M4,
-c'est-à-dire après l'étape d'anonymisation.
-\end{definitionbox}
+La deuxième est technique. Notre tracker
+M3 est basé sur l'IoU — il travaille
+uniquement avec les coordonnées des
+boîtes englobantes $(x, y, w, h)$. Il
+ne lit jamais les pixels à l'intérieur
+des boîtes. Flouter la frame avant le
+tracking ne dégrade donc pas les
+performances de suivi d'un seul pixel.
 
 \begin{figure}[H]
-\begin{center}
-\resizebox{0.98\textwidth}{!}{%
+\centering
+\resizebox{0.92\textwidth}{!}{%
 \begin{tikzpicture}[
-  node distance=0.75cm,
-  box/.style={draw, rounded corners=4pt,
-    text centered, align=center, font=\footnotesize,
+  box/.style={
+    draw, rounded corners=4pt,
+    align=center, font=\footnotesize,
     minimum width=3.3cm,
     minimum height=0.85cm},
-  raw/.style={box, draw=red!65, fill=red!8},
-  safe/.style={box, draw=AccentGreen, fill=AccentGreen!8},
-  neutral/.style={box, draw=PrimaryBlue, fill=PrimaryBlue!7},
-  note/.style={align=center, font=\footnotesize},
-  arrow/.style={-{Stealth[length=4.5mm,width=3mm]}, line width=1.4pt}
+  raw/.style={box,
+    draw=red!65, fill=red!8},
+  safe/.style={box,
+    draw=AccentGreen,
+    fill=AccentGreen!8},
+  neutral/.style={box,
+    draw=PrimaryBlue,
+    fill=PrimaryBlue!7},
+  note/.style={
+    align=center,
+    font=\footnotesize},
+  arrow/.style={
+    -{Stealth[length=4.5mm, width=3mm]},
+    line width=1.4pt}
 ]
 
-% Ordre non retenu
-\node[note, font=\bfseries, color=red!70] (badtitle)
-  at (0, 0) {Ordre non retenu};
-\node[neutral] (badm2) at (0,-1.0)
-  {M2 Détection\\bboxes + frame originale};
-\node[raw] (badm3) at (0,-2.55)
-  {M3 Tracking\\sur frame non anonymisée};
-\node[raw] (badm4) at (0,-4.10)
-  {M4 Anonymisation\\après traitement interne};
-\node[note, color=red!70] (badnote) at (0,-5.35)
-  {La frame identifiable circule\\jusqu'au module de tracking};
+\node[note, font=\bfseries, color=red!70]
+  at (0,0) {Ordre non retenu};
+\node[neutral] (bm2) at (0,-1.0)
+  {M2 Détection};
+\node[raw] (bm3) at (0,-2.55)
+  {M3 Tracking\\sur frame originale};
+\node[raw] (bm4) at (0,-4.10)
+  {M4 Anonymisation\\après tracking};
+\node[note, color=red!70] at (0,-5.25)
+  {La frame identifiable circule\\
+  jusqu'au tracker};
 
-\draw[arrow, red!65] (badm2)--(badm3);
-\draw[arrow, red!65] (badm3)--(badm4);
+\draw[arrow, red!65] (bm2) -- (bm3);
+\draw[arrow, red!65] (bm3) -- (bm4);
 
-% Ordre retenu
-\node[note, font=\bfseries, color=AccentGreen] (goodtitle)
-  at (8.4, 0) {Ordre retenu};
-\node[neutral] (goodm2) at (8.4,-1.0)
-  {M2 Détection\\bboxes + frame originale};
-\node[safe] (goodm4) at (8.4,-2.55)
-  {M4 Anonymisation immédiate\\floutage des personnes};
-\node[safe] (goodm3) at (8.4,-4.10)
-  {M3 Tracking IoU\\sur bboxes et frame anonymisée};
-\node[note, color=AccentGreen] (goodnote) at (8.4,-5.35)
-  {Après M4, seules des données\\anonymisées sont propagées};
+\node[note, font=\bfseries,
+  color=AccentGreen]
+  at (8.4,0) {Ordre retenu};
+\node[neutral] (gm2) at (8.4,-1.0)
+  {M2 Détection};
+\node[safe] (gm4) at (8.4,-2.55)
+  {M4 Anonymisation\\immédiate};
+\node[safe] (gm3) at (8.4,-4.10)
+  {M3 Tracking IoU\\sur frame floutée};
+\node[note, color=AccentGreen]
+  at (8.4,-5.25)
+  {Après M4, aucun pixel\\
+  identifiable ne circule};
 
-\draw[arrow, AccentGreen] (goodm2)--(goodm4);
-\draw[arrow, AccentGreen] (goodm4)--(goodm3);
+\draw[arrow, AccentGreen] (gm2) -- (gm4);
+\draw[arrow, AccentGreen] (gm4) -- (gm3);
 
-% Comparaison centrale
-\node[note, draw=DarkGray, fill=LightGray,
-      rounded corners=4pt, minimum width=2.6cm,
-      minimum height=1.0cm]
-  at (4.2,-6.25)
-  {Objectif :\\Privacy-by-Design\\et Loi 09-08};
+\node[
+  draw=DarkGray, fill=LightGray,
+  rounded corners=4pt,
+  minimum width=2.6cm,
+  minimum height=1.0cm,
+  align=center, font=\footnotesize
+] at (4.2,-6.4)
+  {Loi 09-08\\Privacy-by-Design};
 
-\end{tikzpicture}%
-}
-\caption[Justification de l'ordre M4 avant M3]{Justification de l'ordre M4 avant M3 : l'anonymisation est appliquée avant le tracking afin d'éviter la propagation de frames identifiables dans les modules internes.}
+\end{tikzpicture}}
+\caption{Justification de l'ordre M4 avant M3
+         \textit{(Source : auteur)}}
 \label{fig:order_justification}
-\end{center}
 \end{figure}
-
-% ============================================================
-% Sections 3.3 à 3.10 — Modules et choix technologiques
-% ============================================================
 
 \section{Module M1 — Acquisition vidéo}
 
-Le module M1 constitue le point d'entrée
-du pipeline. Il est chargé de capturer
-le flux vidéo depuis une source — fichier
-\texttt{.mp4} ou caméra USB — et de le
-décomposer en frames individuelles transmises
-aux modules suivants.
-
-\begin{resultbox}{Choix technologique — OpenCV}
-OpenCV est retenu pour le module d'acquisition
-car il offre une API unifiée pour la lecture
-de fichiers vidéo et de flux caméra, avec une
-empreinte mémoire minimale sur CPU ARM Cortex-A76.
-Sa présence dans l'ensemble du pipeline évite
-toute dépendance supplémentaire.
-\end{resultbox}
+M1 est le point d'entrée du pipeline.
+Il lit la vidéo source frame par frame
+et alimente M2. L'implémentation repose
+sur OpenCV, qui offre une API unifiée
+pour la lecture de fichiers vidéo avec
+une empreinte mémoire minimale sur
+CPU ARM.
 
 \begin{lstlisting}[language=Python,
-  caption={Module M1 — Acquisition vidéo}]
-cap = cv2.VideoCapture(source)  # fichier ou camera
-ret, frame = cap.read()         # lecture frame
+  caption={Module M1 — lecture vidéo}]
+cap = cv2.VideoCapture(source)
+ret, frame = cap.read()
 \end{lstlisting}
 
-% ============================================================
 \section{Module M2 — Détection YOLO26n}
 
-Le module M2 réalise la détection multi-classes
-en temps réel. Il reçoit chaque frame et produit
-un ensemble de boîtes englobantes annotées
-avec leur classe et leur score de confiance.
+M2 reçoit chaque frame et produit les
+boîtes englobantes avec leur classe
+et leur score de confiance. Le benchmark
+décrit au Chapitre~\ref{ch:implementation}
+a conduit à retenir YOLO26n en format
+ONNX FP32, pour les raisons détaillées
+dans le Chapitre~\ref{ch:etat_art}.
 
-\subsection{Choix du modèle}
-
-Le benchmark empirique conduit sur GPU
-(Google Colab Pro, NVIDIA A100) et sur
-Raspberry Pi 5 a permis de sélectionner
-YOLO26n comme modèle final, selon les
-résultats du Tableau~\ref{tab:yolo_benchmark}.
-
-\subsection{Format de déploiement}
-
-\begin{resultbox}{Choix technologique — ONNX FP32}
-Le modèle retenu est exporté au format ONNX FP32
-et exécuté avec ONNX Runtime sur CPU ARM Cortex-A76
-sans GPU dédié. Le format FP32 a été conservé car
-les essais INT8 réduisaient la taille du modèle,
-mais introduisaient une confusion plus forte entre
-certaines classes proches, notamment \textit{car},
-\textit{bus} et \textit{truck}.
-\end{resultbox}
+Les tests INT8 ont montré une confusion
+accrue entre les classes car, bus et
+truck sur les frames de nuit et sur
+les objets partiellement occultés.
+Le format FP32 est donc conservé malgré
+une empreinte plus grande.
 
 \begin{equation}
 \texttt{yolo26n.pt}
-\xrightarrow{\text{export}}
+\xrightarrow{\text{export ONNX}}
 \texttt{YOLO26n\_step3\_960\_best.onnx}
 \label{eq:export}
 \end{equation}
 
-% ============================================================
+\section{Module M4 — Anonymisation
+         Privacy-by-Design}
+\label{sec:m4}
 
-% ============================================================
-% Section — Module M4 : Anonymisation Privacy-by-Design
-% ============================================================
+\subsection{Positionnement et rôle}
 
-\section{Module M4 — Anonymisation et
-         conformité Loi 09-08}
+M4 est le module le plus sensible du
+point de vue juridique. Il reçoit la
+frame originale et les boîtes de M2,
+applique le floutage sur toutes les
+boîtes de classe \textit{person}, et
+transmet une frame anonymisée à M3.
+Aucun pixel identifiable ne circule
+au-delà de ce module.
 
-\subsection{Positionnement dans le pipeline}
+\subsection{Choix du noyau gaussien}
 
-L'anonymisation constitue le module le plus
-sensible du pipeline du point de vue juridique.
-Notre système traite des flux vidéo d'espaces
-publics dans lesquels des personnes physiques
-sont nécessairement capturées. En vertu de la
-\textbf{Loi 09-08} relative à la protection
-des personnes physiques à l'égard du traitement
-des données à caractère personnel, toute
-information permettant d'identifier directement
-ou indirectement une personne constitue
-une donnée personnelle devant faire l'objet
-d'une protection.
+La valeur $51 \times 51$ pixels a été
+choisie par ajustement visuel sur les
+frames du dashboard. L'objectif était
+d'obtenir un floutage visiblement
+protecteur sans rendre la zone
+complètement illisible.
 
-Dans notre architecture, le module M4 est
-positionné \textbf{immédiatement après la
-détection (M2) et avant le tracking (M3)}.
-Ce choix n'est pas anodin — il constitue
-le cœur du principe \textbf{Privacy-by-Design} :
-aucun pixel identifiable ne circule au-delà
-du module M4.
-
-\subsection{Principe Privacy-by-Design}
-
-Le principe Privacy-by-Design, formalisé
-par Cavoukian (2009) et intégré au RGPD
-européen (2018), stipule que la protection
-des données personnelles doit être intégrée
-dès la conception du système, et non ajoutée
-a posteriori. Notre implémentation respecte
-ce principe à travers trois règles strictes :
-
-\begin{enumerate}
-    \item \textbf{Anonymisation locale :}
-    le floutage est réalisé directement
-    sur le Raspberry Pi 5, avant tout
-    transfert ou affichage. Aucun frame
-    non anonymisé ne quitte le dispositif
-    embarqué.
-
-    \item \textbf{Anonymisation préalable :}
-    M4 s'exécute avant M3 (tracking).
-    Le tracker IoU utilise uniquement
-    la position des boîtes englobantes —
-    aucune feature visuelle du visage
-    ou du corps n'est extraite.
-
-    \item \textbf{Sélectivité de classe :}
-    seule la classe \textit{person} (id 4)
-    déclenche l'anonymisation. Les
-    véhicules ne sont pas concernés,
-    car ils ne constituent pas des
-    données personnelles au sens de
-    la Loi 09-08.
-\end{enumerate}
-
-\subsection{Implémentation technique}
-
-L'anonymisation est réalisée par
-\textbf{floutage gaussien} appliqué
-sur la région d'intérêt (ROI) de
-chaque détection \textit{person}.
+Un noyau $25 \times 25$ donnait un
+résultat parfois insuffisant sur les
+visages proches de la caméra. Un noyau
+$75 \times 75$ était efficacement
+protecteur mais dégradait la lisibilité
+des zones — notamment quand plusieurs
+piétons se chevauchent. La valeur
+$51 \times 51$ représente le bon
+compromis, validé visuellement sur
+plusieurs frames de référence.
 
 \begin{algorithm}[H]
 \caption{Anonymisation M4 —
          Privacy-by-Design}
 \begin{algorithmic}[1]
 \REQUIRE frame $F$, détections $D$
-         issues de M2
 \ENSURE frame anonymisée $F'$
-
 \STATE $F' \leftarrow F$
 \FOR{chaque détection $d \in D$}
-    \IF{$d.\text{class} = \text{person}$}
-        \STATE Extraire ROI :
-               $x_1, y_1, x_2, y_2
-               \leftarrow d.\text{bbox}$
-        \STATE $\text{roi}
-               \leftarrow F'[y_1:y_2,
-               x_1:x_2]$
-        \STATE $\text{roi\_floutée}
-               \leftarrow
-               \text{GaussianBlur}(
-               \text{roi},
-               (51, 51), 0)$
-        \STATE $F'[y_1:y_2, x_1:x_2]
-               \leftarrow
-               \text{roi\_floutée}$
-    \ENDIF
+  \IF{$d.\text{class} = \text{person}$}
+    \STATE $x_1, y_1, x_2, y_2
+      \leftarrow d.\text{bbox}$
+    \STATE $\text{roi} \leftarrow
+      F'[y_1:y_2,\ x_1:x_2]$
+    \STATE $\text{roi} \leftarrow
+      \text{GaussianBlur}(
+      \text{roi}, (51, 51), 0)$
+    \STATE $F'[y_1:y_2,\ x_1:x_2]
+      \leftarrow \text{roi}$
+  \ENDIF
 \ENDFOR
 \RETURN $F'$
 \end{algorithmic}
 \end{algorithm}
 
-Le noyau gaussien de taille
-\textbf{$51\times 51$ pixels} a été sélectionné
-empiriquement pour garantir l'illisibilité
-du visage tout en conservant la visibilité
-du contour de la personne, nécessaire
-au tracking IoU.
+\subsection{Compatibilité avec M3}
 
-\subsection{Compatibilité M4 → M3}
-
-Une question légitime se pose :
-comment le module M3 (tracking) peut-il
-fonctionner correctement si les personnes
-sont floutées avant d'être trackées ?
-
-La réponse tient à la nature de
-l'algorithme de tracking retenu.
-Le \textbf{tracker IoU} associe les
-détections entre frames en calculant
-le chevauchement (\textit{Intersection
-over Union}) entre les boîtes
-englobantes. Cette opération utilise
-\textbf{exclusivement les coordonnées
-$(x, y, w, h)$} de chaque boîte —
-les pixels à l'intérieur de la boîte
-ne sont jamais consultés.
+Le tracker IoU travaille uniquement
+avec les coordonnées des boîtes
+$(x, y, w, h)$. Il ne lit jamais
+les pixels à l'intérieur. Flouter
+la frame avant le tracking n'affecte
+donc en rien les performances de suivi.
 
 \begin{table}[H]
 \centering
-\caption{Compatibilité anonymisation
-         avec les modules suivants}
+\caption{Compatibilité de M4 avec
+         les modules suivants}
 \begin{tabularx}{\textwidth}{lXl}
 \toprule
 \textbf{Module} &
 \textbf{Données utilisées} &
-\textbf{Compatible M4} \\
+\textbf{Impacté par M4 ?} \\
 \midrule
 M3 Tracker IoU &
 Coordonnées bbox uniquement &
-\textbf{Oui} \\
+Non \\
 M5 MDP &
 Comptages par zone &
-\textbf{Oui} \\
+Non \\
 M6 Dashboard &
 Frame anonymisée affichée &
-\textbf{Oui} \\
+Non \\
 \bottomrule
 \end{tabularx}
 \label{tab:m4_compat}
 \end{table}
 
-L'anonymisation préalable au tracking
-est donc non seulement compatible mais
-constitue une décision d'architecture
-qui renforce la conformité légale sans
-impacter les performances fonctionnelles
-du système.
+\subsection{Pourquoi pas ByteTrack}
+\label{sec:bytetrack}
 
-\subsection{Pourquoi pas ByteTrack ?}
+ByteTrack offre une meilleure robustesse
+aux occlusions grâce à un modèle de
+ré-identification visuelle qui extrait
+des caractéristiques du corps pour
+associer les détections entre frames.
+Ce mécanisme est incompatible avec
+notre architecture pour deux raisons.
 
-Certains travaux récents recommandent
-l'utilisation de \textbf{ByteTrack}
-(Zhang et al., 2022) pour sa robustesse
-aux occlusions. Cependant, ByteTrack
-repose sur un modèle de ré-identification
-visuelle qui extrait des features du
-corps des personnes pour associer les
-détections entre frames.
+Juridiquement, extraire des
+caractéristiques visuelles d'une personne
+constitue un traitement de données
+biométriques au sens de la Loi 09-08,
+soumis à des exigences de consentement
+que notre système de surveillance ne
+peut pas satisfaire.
 
-Cette approche est \textbf{incompatible}
-avec notre contrainte Privacy-by-Design
-pour deux raisons :
+Matériellement, le modèle de
+ré-identification additionnel de ByteTrack
+consomme des ressources CPU incompatibles
+avec le Raspberry Pi 5 en mode temps réel.
 
-\begin{itemize}
-    \item \textbf{Raison juridique :}
-    extraire des features visuelles
-    d'une personne constitue un
-    traitement de données biométriques
-    au sens de la Loi 09-08, soumis
-    à des exigences strictes de
-    consentement.
+Le tracker IoU retenu règle les deux
+problèmes : il n'utilise que les
+coordonnées, sans jamais lire les pixels.
 
-    \item \textbf{Raison embarquée :}
-    le modèle de ré-identification
-    de ByteTrack requiert des ressources
-    CPU supplémentaires incompatibles
-    avec le Raspberry Pi 5 en mode
-    temps réel.
-\end{itemize}
+\section{Module M3 — Tracking IoU
+         et comptage par zones}
 
-Le tracker IoU retenu respecte donc
-simultanément la contrainte légale
-et la contrainte matérielle.
+\subsection{Rôle}
 
-\begin{resultbox}{Module M4 — Bilan}
-Le module M4 implémente le principe
-Privacy-by-Design en appliquant un
-floutage gaussien (noyau $51\times 51$)
-sur chaque détection \textit{person}
-\textbf{avant} le tracking. Aucun
-pixel identifiable ne circule au-delà
-de ce module. Cette architecture
-garantit la conformité à la Loi 09-08
-sans impacter les performances
-fonctionnelles du pipeline.
-\end{resultbox}
+M3 reçoit les frames anonymisées de M4
+et les boîtes de M2. Il fait deux choses :
+associer chaque détection à un identifiant
+de track persistant d'une frame à l'autre,
+et affecter chaque objet à une zone
+directionnelle pour produire les densités
+transmises à M5.
 
-% ============================================================
-% Section — Module M3 : Tracking IoU et comptage par zones
-% ============================================================
+\subsection{Algorithme IoU}
 
-\section{Module M3 — Tracking IoU et
-         comptage par zones}
-
-\subsection{Rôle dans le pipeline}
-
-Le module M3 reçoit les frames anonymisées
-de M4 et remplit deux fonctions distinctes :
-
-\begin{enumerate}
-    \item \textbf{Tracking multi-objets :}
-    associer chaque détection à un identifiant
-    unique (\textit{track ID}) persistant
-    d'une frame à l'autre, permettant de
-    suivre chaque véhicule ou piéton
-    au fil du temps.
-
-    \item \textbf{Comptage par zones :}
-    affecter chaque objet tracké à une
-    zone directionnelle (Nord, Sud, Est,
-    Ouest, Piétons) selon sa position
-    dans l'image, et produire les densités
-    $q_N, q_S, q_E, q_O, p, e$ transmises
-    au module M5.
-\end{enumerate}
-
-\subsection{Algorithme de tracking IoU}
-
-Le tracking repose sur le calcul de
-l'\textbf{Intersection over Union (IoU)}
-entre les boîtes englobantes de frames
-successives. Pour chaque détection à
-l'instant $t$, le tracker cherche la
-détection à l'instant $t-1$ qui maximise
-le chevauchement :
+Pour chaque détection à l'instant $t$,
+le tracker cherche la boîte de l'instant
+$t-1$ qui maximise le chevauchement :
 
 \begin{equation}
-\text{track}^* = \arg\max_{j}
-\text{IoU}(\hat{B}_i^t,\ \hat{B}_j^{t-1})
+\text{track}^* =
+\arg\max_{j}\ \text{IoU}(
+\hat{B}_i^t,\ \hat{B}_j^{t-1})
 \label{eq:iou_tracking}
 \end{equation}
 
 Une association est validée si
-$\text{IoU} \geq \theta_{track}$
-avec $\theta_{track} = 0.3$.
-Au-delà de ce seuil, un nouvel identifiant
-est créé. Un track est supprimé après
-$N_{lost} = 5$ frames consécutives
-sans association.
+$\text{IoU} \geq 0.3$. En dessous,
+un nouveau track est créé. Un track
+sans association depuis $N_{lost} = 5$
+frames consécutives est supprimé.
 
 \begin{algorithm}[H]
 \caption{Tracking IoU — M3}
 \begin{algorithmic}[1]
 \REQUIRE détections $D^t$,
          tracks actifs $T^{t-1}$
-\ENSURE tracks mis à jour $T^t$,
-       densités par zone
-
-\STATE Calculer matrice IoU :
-       $M_{ij} = \text{IoU}(D_i^t,
-       T_j^{t-1})$
-\STATE Appliquer algorithme hongrois
-       sur $M$ pour association optimale
-\FOR{chaque paire associée $(i, j)$
-     avec $M_{ij} \geq \theta_{track}$}
-    \STATE Mettre à jour track $j$
-           avec détection $i$
+\ENSURE tracks $T^t$, densités
+\STATE $M_{ij} \leftarrow
+  \text{IoU}(D_i^t, T_j^{t-1})$
+\STATE Résoudre l'assignation optimale
+  (algorithme hongrois)
+\FOR{paire associée $(i,j)$,
+     $M_{ij} \geq 0.3$}
+  \STATE Mettre à jour track $j$
 \ENDFOR
-\FOR{chaque détection $i$ non associée}
-    \STATE Créer nouveau track
-           avec ID unique
+\FOR{détection $i$ non associée}
+  \STATE Créer nouveau track
 \ENDFOR
-\FOR{chaque track $j$ non associé}
-    \STATE Incrémenter compteur
-           $\text{lost}_j$
-    \IF{$\text{lost}_j > N_{lost}$}
-        \STATE Supprimer track $j$
-    \ENDIF
+\FOR{track $j$ non associé}
+  \STATE $\text{lost}_j \mathrel{+}= 1$
+  \IF{$\text{lost}_j > 5$}
+    \STATE Supprimer track $j$
+  \ENDIF
 \ENDFOR
 \RETURN $T^t$
 \end{algorithmic}
@@ -888,17 +769,21 @@ sans association.
 
 \subsection{Zones polygonales}
 
-Contrairement à une approche par
-zones rectangulaires simples, notre
-système utilise des \textbf{polygones
-calibrés} adaptés à la perspective
-réelle de la caméra de surveillance.
-
-Pour chaque frame de la vidéo source,
-quatre polygones directionnels et une
-zone centrale piétons sont définis
-via l'outil de calibration interactif
+Les zones directionnelles sont des
+polygones définis manuellement sur
+une frame de référence. La calibration
+se fait à la souris via l'outil
 \texttt{calibrate\_interactive.py} :
+on ouvre une frame de la vidéo, on
+clique les coins de chaque zone, et
+les coordonnées sont sauvegardées dans
+un fichier JSON réutilisé à chaque
+lancement du pipeline. Cette calibration
+manuelle est nécessaire parce que la
+géométrie d'une intersection varie
+selon l'angle et la hauteur de la
+caméra — il n'existe pas de configuration
+automatique universelle.
 
 \begin{table}[H]
 \centering
@@ -910,167 +795,116 @@ via l'outil de calibration interactif
 \textbf{Description} &
 \textbf{Couleur} \\
 \midrule
-Nord     & $q_N$ &
-Véhicules arrivant du nord &
-Bleu \\
-Sud      & $q_S$ &
-Véhicules arrivant du sud &
-Vert \\
-Est      & $q_E$ &
-Véhicules arrivant de l'est &
-Jaune \\
-Ouest    & $q_O$ &
-Véhicules arrivant de l'ouest &
-Orange \\
-Piétons  & $p$   &
-Zone centrale passage piétons &
-Magenta \\
+Nord    & $q_N$ &
+Véhicules arrivant du nord & Bleu \\
+Sud     & $q_S$ &
+Véhicules arrivant du sud & Vert \\
+Est     & $q_E$ &
+Véhicules arrivant de l'est & Jaune \\
+Ouest   & $q_O$ &
+Véhicules arrivant de l'ouest & Orange \\
+Piétons & $p$   &
+Zone centrale de passage & Magenta \\
 \bottomrule
 \end{tabularx}
 \label{tab:zones}
 \end{table}
 
 L'affectation d'un objet à une zone
-est déterminée par le centre bas de
-sa boîte englobante $(x_c, y_{bas})$,
-point qui correspond approximativement
-au contact au sol du véhicule :
+utilise le centre bas de sa boîte
+$(x_c, y_{bas})$, qui correspond
+approximativement au point de contact
+au sol. C'est plus robuste que le centre
+géométrique, qui se déplace quand
+l'objet est partiellement occulté.
 
 \begin{equation}
-\text{zone}(B) = z \in Z \text{ tel que }
+\text{zone}(B) = z \in Z\
+\text{tel que}\
 (x_c, y_{bas}) \in \text{polygone}(z)
 \label{eq:zone_assign}
 \end{equation}
 
-Ce choix du point de contact au sol
-est plus robuste que le centre géométrique
-de la boîte, car il est moins affecté
-par les occlusions partielles.
+\subsection{Lissage par fenêtre glissante}
 
-\subsection{Comptage et densités}
-
-À chaque frame, les densités transmises
-au module M5 sont calculées par
-accumulation sur une fenêtre glissante
+Les densités transmises à M5 sont
+calculées sur une fenêtre glissante
 de $W = 10$ frames :
 
 \begin{equation}
-q_z = \frac{1}{W} \sum_{t=T-W}^{T}
-\text{count}(z, t)
+q_z = \frac{1}{W}
+\sum_{t=T-W}^{T} \text{count}(z, t)
 \label{eq:density}
 \end{equation}
 
-où $\text{count}(z, t)$ est le nombre
-d'objets dans la zone $z$ à l'instant $t$.
+La valeur $W = 10$ est un compromis
+empirique entre réactivité et stabilité.
+Une fenêtre de 1 ou 3 frames rend le
+système trop sensible aux faux positifs
+transitoires — une seule détection
+erronée peut changer la phase de feux.
+Une fenêtre de 30 frames stabilise les
+scores mais ralentit la réponse aux
+vrais changements du trafic. La valeur
+10 frames donne une décision qui réagit
+aux tendances plutôt qu'aux fluctuations.
 
-Le lissage par fenêtre glissante évite
-les décisions réactives à des détections
-isolées ou des faux positifs transitoires.
+\subsection{Comptage par classe et par zone}
 
-\subsection{Détail par classe}
-
-Le tracker enrichit les comptages en
-distinguant les classes détectées
-dans chaque zone :
+Le tracker distingue les classes dans
+chaque zone pour alimenter M5 avec
+un état détaillé :
 
 \begin{table}[H]
 \centering
-\caption{Comptage détaillé par classe
-         et par zone — exemple d'état}
+\caption{Exemple d'état par classe et par zone}
 \begin{tabularx}{\textwidth}{lcccccc}
 \toprule
 \textbf{Zone} &
-\textbf{car} &
-\textbf{bus} &
-\textbf{truck} &
-\textbf{moto} &
-\textbf{emergency} &
-\textbf{person} \\
+\textbf{car} & \textbf{bus} &
+\textbf{truck} & \textbf{moto} &
+\textbf{emergency} & \textbf{person} \\
 \midrule
-Nord   & 8 & 1 & 0 & 2 & 0 & 0 \\
-Sud    & 2 & 0 & 1 & 1 & 0 & 0 \\
-Est    & 4 & 0 & 0 & 3 & 1 & 0 \\
-Ouest  & 3 & 0 & 0 & 1 & 0 & 0 \\
-Piétons& 0 & 0 & 0 & 0 & 0 & 3 \\
+Nord    & 8 & 1 & 0 & 2 & 0 & 0 \\
+Sud     & 2 & 0 & 1 & 1 & 0 & 0 \\
+Est     & 4 & 0 & 0 & 3 & 1 & 0 \\
+Ouest   & 3 & 0 & 0 & 1 & 0 & 0 \\
+Piétons & 0 & 0 & 0 & 0 & 0 & 3 \\
 \midrule
-\textbf{Total} & 17 & 1 & 1 & 7 & 1 & 3 \\
+\textbf{Total} &
+17 & 1 & 1 & 7 & 1 & 3 \\
 \bottomrule
 \end{tabularx}
 \label{tab:zone_counts}
 \end{table}
 
-Cet état produit le vecteur
-$s = (11, 4, 8, 4, 3, 1)$
-transmis au module M5, qui active
-immédiatement la phase Emergency
-en raison de $e = 1$.
+Dans cet exemple, le vecteur d'état
+transmis à M5 est $s = (11, 4, 8, 4, 3, 1)$.
+Comme $e = 1$, la phase Emergency est
+activée immédiatement, quelle que soit
+la valeur des autres scores.
 
-\subsection{Pourquoi IoU et pas ByteTrack}
+\section{Module M5 — Décision MDP}
 
-Des algorithmes de tracking avancés
-tels que \textbf{ByteTrack}
-(Zhang et al., 2022) offrent une
-meilleure robustesse aux occlusions
-via la ré-identification visuelle.
-Cependant, deux incompatibilités
-fondamentales les excluent de
-notre architecture :
+M5 reçoit le vecteur d'état de M3 et
+calcule la phase de feux à activer.
+La politique est déterministe — pas
+de réseau neuronal, pas d'apprentissage
+en ligne. La décision se réduit à
+quelques comparaisons et un calcul
+de score, exécutable en microsecondes
+sur le CPU ARM.
 
-\begin{itemize}
-    \item \textbf{Incompatibilité légale :}
-    ByteTrack extrait des features
-    visuelles du corps des personnes
-    pour associer les détections —
-    opération constitutive d'un
-    traitement de données biométriques
-    au sens de la Loi 09-08.
+\subsection{Formulation}
 
-    \item \textbf{Incompatibilité embarquée :}
-    le modèle de ré-identification
-    additionnel est incompatible
-    avec les ressources CPU du
-    Raspberry Pi 5 en mode temps réel.
-\end{itemize}
-
-Le tracker IoU retenu utilise
-exclusivement les coordonnées
-des boîtes englobantes —
-\textbf{aucun pixel ne contribue
-au tracking}, garantissant la
-conformité Privacy-by-Design.
-
-\begin{resultbox}{Module M3 — Bilan}
-Le module M3 implémente un tracker IoU
-léger s'appuyant exclusivement sur
-les positions des boîtes englobantes,
-sans extraction de features visuelles.
-Les densités par zone
-$(q_N, q_S, q_E, q_O, p, e)$
-sont produites par lissage sur fenêtre
-glissante de 10 frames et transmises
-au module M5 pour la décision adaptative.
-Cette architecture est à la fois conforme
-à la Loi 09-08 et compatible avec
-les ressources du Raspberry Pi 5.
-\end{resultbox}
-
-% ============================================================
-\section{Module M5 — Décision adaptative MDP}
-
-\subsection{Formulation complète}
-
-Le module M5 implémente la politique
-de décision $\pi^*(s)$ définie au
-Chapitre~\ref{ch:etat_art}.
-
-\textbf{Entrée — État courant :}
+L'état courant :
 
 \begin{equation}
 s = (q_N,\ q_S,\ q_E,\ q_O,\ p,\ e)
 \label{eq:state_m5}
 \end{equation}
 
-\textbf{Fonction de scoring pondéré :}
+Le score pour chaque direction $i$ :
 
 \begin{equation}
 \text{Score}(i) =
@@ -1082,122 +916,200 @@ w_v \cdot q_i^{veh}
 
 \begin{table}[H]
 \centering
-\caption{Paramètres du module de décision M5}
+\caption{Coefficients et seuils du module M5}
 \begin{tabularx}{\textwidth}{llXl}
 \toprule
-\textbf{Paramètre} &
+\textbf{Param.} &
 \textbf{Valeur} &
-\textbf{Justification} &
-\textbf{Source} \\
+\textbf{Logique} &
+\textbf{Classes} \\
 \midrule
-$w_v$ (véhicules) & 1.0 &
-Poids de référence &
-Highway Capacity Manual \\
-$w_p$ (piétons) & 1.5 &
-Priorité piétons (+50\%) &
-Highway Capacity Manual \\
-$w_e$ (urgence) & 100.0 &
-Priorité absolue &
-Règlement circulation \\
-$\theta_H$ (haut) & 10 veh &
-Densité élevée -- 45s &
-Empirique (Lqliaa) \\
-$\theta_M$ (moyen) & 5 veh &
-Densité moyenne -- 30s &
-Empirique (Lqliaa) \\
+$w_v$ & 1.0 &
+Référence de base &
+car, bus, truck, moto \\
+$w_p$ & 1.5 &
+Piétons prioritaires, pas
+au point de bloquer le trafic &
+person \\
+$w_e$ & 100.0 &
+Valeur assez haute pour
+qu'aucun autre score ne
+puisse la dépasser &
+emergency\_vehicle \\
+$\theta_H$ & 10 veh &
+Seuil densité haute → 45s &
+— \\
+$\theta_M$ & 5 veh &
+Seuil densité moyenne → 30s &
+— \\
 \bottomrule
 \end{tabularx}
 \label{tab:mdp_params}
 \end{table}
 
-\textbf{Politique et durée :}
+La politique :
 
 \begin{equation}
 \pi^*(s) =
 \begin{cases}
-\text{Emergency} & \text{si } e > 0 \\
+\text{Emergency} &
+\text{si } e > 0 \\[5pt]
 \text{Pedestrian} &
 \text{si } p > 0 \wedge
-\max_i q_i^{veh} < \theta_H \\
+\max_i q_i^{veh} < \theta_H \\[5pt]
 \arg\max_i \text{Score}(i) &
 \text{sinon}
 \end{cases}
 \label{eq:policy_m5}
 \end{equation}
 
+La durée de phase :
+
 \begin{equation}
 D^* =
 \begin{cases}
-45\text{s} & q_i^{veh} \geq \theta_H \\
-30\text{s} & \theta_M \leq
-             q_i^{veh} < \theta_H \\
-15\text{s} & q_i^{veh} < \theta_M
+45\text{s} &
+q_i^{veh} \geq \theta_H \\
+30\text{s} &
+\theta_M \leq q_i^{veh} < \theta_H \\
+15\text{s} &
+q_i^{veh} < \theta_M
 \end{cases}
 \label{eq:duration_m5}
 \end{equation}
 
-\begin{resultbox}{Choix technologique —
-                  MDP déterministe}
-Le module de décision implémente une politique
-déterministe basée sur un Processus de Décision
-Markovien résolu par Policy Iteration.
-La politique optimale $\pi^*(s)$ est calculée
-analytiquement et déployée sur Raspberry Pi 5
-comme fonction de scoring pondéré, garantissant
-une décision en temps réel sans overhead
-computationnel. Les coefficients sont définis
-empiriquement selon les recommandations du
-Highway Capacity Manual et validés sur les
-séquences vidéo collectées à Lqliaa, Agadir.
-\end{resultbox}
 
-% ============================================================
-% Section — Module M6 : Dashboard Flask
-% ============================================================
+\subsection{Exemple numérique — Frame F181}
 
-\section{Module M6 — Dashboard Flask
-         temps réel}
+Pour illustrer concrètement le fonctionnement
+de la politique $\pi^*(s)$, prenons l'état
+réel capturé à la frame F181 de la vidéo
+Bellevue NE8th :
 
-\subsection{Rôle et objectifs}
+\begin{equation}
+s = (q_N=12,\ q_S=0,\ q_E=2,\ q_W=6,\
+p=7,\ e=0)
+\label{eq:exemple_etat}
+\end{equation}
 
-Le module M6 constitue la couche de
-visualisation et de supervision du
-système. Il remplit trois fonctions :
+\textbf{Étape 1 — Vérification urgence :}
+$e = 0$, pas de véhicule d'urgence.
+On passe à l'étape suivante.
 
-\begin{enumerate}
-    \item \textbf{Visualisation temps réel :}
-    afficher le flux vidéo annoté avec
-    les détections YOLO, les tracks actifs,
-    les zones polygonales et l'anonymisation
-    des piétons.
+\textbf{Étape 2 — Vérification piétons :}
+$p = 7 > 0$ mais $\max(q_i^{veh}) =
+\max(12, 0, 2, 6) = 12 \geq \theta_H = 10$.
+Le trafic est dense — la phase Pedestrian
+n'est pas déclenchée.
 
-    \item \textbf{Supervision des décisions :}
-    présenter l'état courant du module M5 —
-    phase active, durée, scores par direction
-    et état des feux N/E/S/W.
+\textbf{Étape 3 — Calcul des scores :}
 
-    \item \textbf{Indicateurs de performance :}
-    afficher les métriques temps réel du
-    pipeline : FPS, latence d'analyse,
-    nombre d'objets détectés, piétons
-    anonymisés et tracks actifs.
-\end{enumerate}
+\begin{align}
+\text{Score}(NS) &= w_v \cdot (q_N + q_S)
++ w_p \cdot p \notag \\
+&= 1.0 \times (12 + 0)
++ 1.5 \times 7 \notag \\
+&= 12.0 + 10.5 = \mathbf{22.5}
+\label{eq:score_ns_exemple}
+\end{align}
 
-\subsection{Architecture technique}
+\begin{align}
+\text{Score}(EW) &= w_v \cdot (q_E + q_W)
++ w_p \cdot p \notag \\
+&= 1.0 \times (2 + 6)
++ 1.5 \times 7 \notag \\
+&= 8.0 + 10.5 = \mathbf{18.5}
+\label{eq:score_ew_exemple}
+\end{align}
 
-Le dashboard est implémenté avec le
-micro-framework \textbf{Flask} (Python),
-accessible via navigateur web sur
-le réseau local. L'architecture est
-\textbf{thread-safe} : le pipeline
-de traitement vidéo (M1→M5) s'exécute
-dans un thread dédié, tandis que le
-serveur Flask répond aux requêtes HTTP
-dans un thread séparé.
+\textbf{Étape 4 — Décision :}
+$\text{Score}(NS) = 22.5 >
+\text{Score}(EW) = 18.5$
+
+\begin{equation}
+\pi^*(s) = \text{North-South}
+\label{eq:decision_exemple}
+\end{equation}
+
+\textbf{Étape 5 — Durée :}
+$q_N = 12 \geq \theta_H = 10$
+
+\begin{equation}
+D^* = 45\text{s}
+\label{eq:duree_exemple}
+\end{equation}
 
 \begin{table}[H]
 \centering
-\caption{Endpoints du Dashboard Flask}
+\caption{Récapitulatif — Exemple numérique
+         Frame F181}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Élément} & \textbf{Valeur} \\
+\midrule
+État détecté &
+$q_N=12, q_S=0, q_E=2, q_W=6,
+p=7, e=0$ \\
+Score NS & 22.5 \\
+Score EW & 18.5 \\
+Phase sélectionnée & North-South \\
+Durée & 45s \\
+Raison & Axe Nord/Sud dominant,
+densité Nord élevée ($q_N=12
+\geq \theta_H=10$) \\
+\bottomrule
+\end{tabularx}
+\label{tab:exemple_numerique_mdp}
+\end{table}
+
+Cet exemple illustre trois propriétés
+importantes de la politique. Premièrement,
+les piétons contribuent aux deux scores
+via $w_p = 1.5$ — ils n'ont pas de phase
+dédiée ici car le trafic est dense.
+Deuxièmement, même avec $q_S = 0$, l'axe
+NS est sélectionné car $q_N = 12$ domine
+largement. Troisièmement, la durée maximale
+de 45s est attribuée car la densité dépasse
+le seuil $\theta_H = 10$.
+
+
+\section{Module M6 — Dashboard Flask}
+
+\subsection{Contexte de développement}
+
+Le dashboard n'a pas été conçu d'un coup.
+Il a évolué par itérations. La première
+version affichait un flux MJPEG simple,
+les statistiques JSON et les scores MDP.
+Ensuite ont été ajoutés : la vidéo source
+en parallèle de l'image analysée, le
+bouton d'analyse fixe, l'affichage des
+polygones de zones, la suppression des
+textes inutiles superposés sur l'image,
+et l'amélioration progressive de l'interface.
+La version finale sépare clairement
+la preuve visuelle IA et les données
+décisionnelles dans quatre panneaux.
+
+\subsection{Architecture technique}
+
+Le dashboard est implémenté avec Flask
+(Python), accessible via navigateur
+sur le réseau local. L'architecture est
+thread-safe : le pipeline M1→M5 tourne
+dans un thread dédié pendant que Flask
+répond aux requêtes HTTP dans un thread
+séparé. L'image annotée est transmise
+en MJPEG sur le port 5000 :
+
+\begin{center}
+\texttt{http://192.168.1.117:5000}
+\end{center}
+
+\begin{table}[H]
+\centering
+\caption{Endpoints du dashboard Flask}
 \begin{tabularx}{\textwidth}{llX}
 \toprule
 \textbf{Route} &
@@ -1205,200 +1117,95 @@ dans un thread séparé.
 \textbf{Description} \\
 \midrule
 \texttt{/} &
-GET &
-Page principale HTML — dashboard complet \\
+GET & Page principale \\
 \texttt{/api/state} &
-GET &
-État JSON temps réel (zones, feux, KPIs) \\
+GET & État JSON temps réel \\
 \texttt{/api/analyze} &
-POST &
-Déclencher analyse sur frame courante \\
+POST & Analyser la frame courante \\
 \texttt{/api/seek} &
-POST &
-Naviguer à une seconde de la vidéo \\
+POST & Aller à une seconde de la vidéo \\
 \texttt{/source\_video} &
-GET &
-Flux vidéo source HTML5 \\
+GET & Flux vidéo source \\
 \texttt{/analysis\_frame.jpg} &
-GET &
-Image analysée (JPEG) avec annotations \\
+GET & Image analysée annotée \\
 \texttt{/health} &
-GET &
-Healthcheck du serveur \\
+GET & Vérification du serveur \\
 \bottomrule
 \end{tabularx}
 \label{tab:flask_endpoints}
 \end{table}
 
-L'image analysée est transmise
-via \textbf{MJPEG streaming} sur
-le port 5000, accessible depuis
-tout navigateur sur le réseau local :
+\subsection{Interface — quatre panneaux}
 
-\begin{center}
-\texttt{http://192.168.1.117:5000}
-\end{center}
+L'interface est organisée en quatre zones.
 
-\subsection{Interface utilisateur}
+Le \textbf{panneau image IA} affiche la
+frame anonymisée avec les boîtes de
+détection colorées par classe, les
+identifiants de tracks, les polygones
+de zones en transparence et les zones
+floutées sur les piétons. Aucune
+statistique n'est superposée sur l'image
+pour conserver sa lisibilité.
 
-L'interface est organisée en quatre
-panneaux fonctionnels distincts :
+Le \textbf{panneau KPI} affiche en temps
+réel les métriques opérationnelles du
+pipeline : FPS, latence d'analyse,
+nombre d'objets détectés, piétons
+anonymisés, tracks actifs et numéro
+de frame.
 
-\subsubsection{Panneau 1 — Image IA anonymisée}
+Le \textbf{panneau décision MDP} présente
+la phase active, sa durée, les scores
+NS/EO et l'état des feux par direction
+avec des indicateurs colorés rouge/vert.
 
-Ce panneau affiche la frame analysée
-avec toutes les annotations visuelles :
-
-\begin{itemize}
-    \item \textbf{Polygones zones} N/S/E/O
-    dessinés en transparence
-    \item \textbf{Boîtes de détection YOLO}
-    colorées par classe
-    \item \textbf{Labels de tracks} avec ID
-    et classe
-    \item \textbf{Zones floutées} pour chaque
-    détection \textit{person}
-\end{itemize}
-
-Aucun texte statistique n'est superposé
-sur l'image afin de préserver sa lisibilité
-pour la démonstration.
-
-\subsubsection{Panneau 2 — KPIs temps réel}
-
-Huit indicateurs de performance sont
-affichés en temps réel :
-
-\begin{table}[H]
-\centering
-\caption{Indicateurs KPI du dashboard}
-\begin{tabularx}{\textwidth}{lXl}
-\toprule
-\textbf{KPI} &
-\textbf{Description} &
-\textbf{Unité} \\
-\midrule
-FPS vidéo source & Cadence de la source vidéo & fps \\
-Latence analyse IA & Temps de traitement pipeline & ms \\
-Objets détectés & Total objets dans la frame & count \\
-Personnes anonymisées & Piétons floutés dans frame & count \\
-Tracks actifs & Identifiants tracks en vie & count \\
-Piétons & Densité zone piétons & count \\
-Urgence & Véhicule urgence détecté & 0/1 \\
-Frame analysée & Numéro de frame courante & — \\
-\bottomrule
-\end{tabularx}
-\label{tab:kpis}
-\end{table}
-
-\subsubsection{Panneau 3 — Décision MDP
-               et feux}
-
-Ce panneau présente la sortie du
-module M5 :
-
-\begin{itemize}
-    \item \textbf{Phase courante} et durée
-    (ex : North-South — 45s)
-    \item \textbf{Scores NS/EW} calculés
-    par la fonction de scoring pondéré
-    \item \textbf{État des feux} N/E/S/W
-    avec indicateurs colorés
-    rouge/vert
-    \item \textbf{Compatibilité MDP} —
-    justification textuelle de la décision
-\end{itemize}
-
-\subsubsection{Panneau 4 — Zones et
-               répartition}
-
-Ce panneau détaille la composition
-du trafic par zone directionnelle :
-
-\begin{itemize}
-    \item Nombre de véhicules par zone
-    \item Détail par classe (car, bus,
-    truck, motorcycle, emergency)
-    \item Nombre de piétons
-    \item Score MDP de la zone
-    \item Indicateur feu vert/rouge
-\end{itemize}
+Le \textbf{panneau zones} détaille la
+composition du trafic par zone directionnelle
+— nombre de véhicules par classe, piétons,
+score MDP et indicateur de feu.
 
 \subsection{Conformité Privacy-by-Design}
 
-Le dashboard respecte strictement
-les contraintes Privacy-by-Design :
+Le dashboard respecte les contraintes
+de la Loi 09-08 à quatre niveaux : seule
+la frame anonymisée est transmise et
+affichée, aucune frame n'est sauvegardée
+sur disque, l'accès est limité au réseau
+local sans exposition internet, et l'API
+\texttt{/api/state} ne retourne que des
+comptages agrégés.
 
-\begin{itemize}
-    \item \textbf{Aucune image brute} :
-    seule la frame anonymisée (M4)
-    est transmise et affichée.
-
-    \item \textbf{Aucun stockage} :
-    les frames ne sont pas enregistrées
-    sur le disque du Raspberry Pi 5.
-
-    \item \textbf{Accès local uniquement} :
-    le dashboard est accessible
-    uniquement sur le réseau local
-    (LAN), sans exposition internet.
-
-    \item \textbf{Données agrégées} :
-    l'API \texttt{/api/state} ne retourne
-    que des comptages anonymisés,
-    jamais des coordonnées ou des
-    identifiants personnels.
-\end{itemize}
-
-\begin{resultbox}{Module M6 — Bilan}
-Le dashboard Flask offre une interface
-de supervision temps réel accessible
-depuis tout navigateur sur le réseau
-local (\texttt{http://Pi:5000}).
-Il présente séparément la preuve
-visuelle IA (image annotée anonymisée)
-et les données décisionnelles (feux,
-zones, KPIs), conformément aux
-exigences de démonstration et de
-conformité Privacy-by-Design.
-\end{resultbox}
-
-% ============================================================
 \section{Synthèse des choix technologiques}
 
 \begin{table}[H]
 \centering
-\caption{Récapitulatif des choix technologiques
-         par module}
+\caption{Récapitulatif des choix par module}
 \begin{tabularx}{\textwidth}{llXl}
 \toprule
 \textbf{Module} &
 \textbf{Technologie} &
-\textbf{Justification principale} &
-\textbf{Référence} \\
+\textbf{Raison principale} &
+\textbf{Réf.} \\
 \midrule
-M1 &
-OpenCV VideoCapture &
+M1 & OpenCV &
 API unifiée, léger ARM &
 \cite{ficili2025} \\
-M2 &
-YOLO26n ONNX FP32 &
-Meilleure précision, NMS-Free &
+M2 & YOLO26n ONNX FP32 &
+FPS maximal, NMS-Free &
 \cite{sapkota2025} \\
-M4 &
-cv2.GaussianBlur &
-Rapide, ARM-natif, Privacy &
+M4 & GaussianBlur 51×51 &
+Visiblement protecteur,
+compatible M3 &
 \cite{jeremiah2024} \\
-M3 &
-IoU Tracker maison &
-Léger, compatible M4 &
+M3 & IoU Tracker &
+Léger, sans features visuelles,
+conforme Loi 09-08 &
 \cite{wang2025} \\
-M5 &
-MDP scoring pondéré &
+M5 & MDP scoring &
 Déterministe, temps réel &
 \cite{michailidis2025} \\
-M6 &
-Flask + MJPEG &
+M6 & Flask + MJPEG &
 Python natif, streaming léger &
 \cite{ficili2025} \\
 \bottomrule
@@ -1406,24 +1213,20 @@ Python natif, streaming léger &
 \label{tab:tech_choices}
 \end{table}
 
-% ============================================================
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
 
-Ce chapitre a présenté l'architecture complète
-du système de gestion intelligente du trafic,
-structurée autour de six modules interconnectés.
-Chaque choix technologique a été justifié par
-rapport aux contraintes matérielles du
-Raspberry Pi 5, aux exigences temps réel
-et aux obligations légales de la Loi 09-08.
+Ce chapitre a décrit l'architecture du
+système et justifié chaque choix de
+conception. La décision centrale —
+placer M4 avant M3 — découle directement
+de la nature position-based du tracker
+IoU et de l'exigence Privacy-by-Design.
+Les autres choix, du noyau gaussien
+$51 \times 51$ à la fenêtre glissante
+de 10 frames, ont tous une justification
+empirique documentée.
 
-La décision clé de placer l'anonymisation (M4)
-avant le tracking (M3) illustre concrètement
-l'application du principe Privacy-by-Design
-rendu possible par la nature position-based
-de notre tracker IoU.
-
-Le chapitre suivant détaille l'implémentation
-concrète de chaque module et les résultats
-du benchmark expérimental.
+Le chapitre suivant détaille la construction
+du dataset et le benchmark expérimental
+qui ont validé ces choix.
