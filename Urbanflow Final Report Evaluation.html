@@ -100,6 +100,20 @@
 
     .status-badge b { color: var(--text); }
 
+    .scene-select {
+      min-width: 150px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text);
+      padding: 4px 7px;
+      font-size: 12px;
+    }
+
+    .scene-select:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .dot {
       width: 8px;
       height: 8px;
@@ -652,12 +666,17 @@
       <img class="brand-logo" src="/Logo.png" alt="UrbanFlow logo">
       <div>
         <div class="brand-name">UrbanFlow</div>
-        <div class="brand-sub">Gestion Intelligente des Feux — PFE M2 IA Embarquée · FSA Aït Melloul</div>
+        <div class="brand-sub">Gestion Intelligente des Feux</div>
       </div>
     </div>
     <div class="topbar-right">
       <span class="status-badge"><span id="piDot" class="dot warn"></span> <span id="systemStatus">Initialisation</span></span>
       <span class="status-badge">Mode : <b id="modeChip">—</b></span>
+      <span class="status-badge">Scène :
+        <select id="sceneSelect" class="scene-select" onchange="changeScene(this.value)">
+          <option value="">Chargement...</option>
+        </select>
+      </span>
       <span class="status-badge">Profil : <b id="profileChip">—</b></span>
       <span class="status-badge">Dernière analyse : <b id="lastAnalysisChip">—</b></span>
     </div>
@@ -831,7 +850,7 @@
   </div>
 
   <script>
-    let lastAnalysisVersion=-1,sourceVideoAttached=false,lastAnonTotal=0,lastDecisionPhase=null;
+    let lastAnalysisVersion=-1,sourceVideoAttached=false,lastAnonTotal=0,lastDecisionPhase=null,activeSceneId=null;
     const analysisLog=[],decisionHistory=[],nsData=Array(20).fill(0),ewData=Array(20).fill(0);
     const transport=['car','motorcycle','truck','bus','emergency_vehicle'];
     const tlabel={car:'Voit.',motorcycle:'Moto',truck:'Cam.',bus:'Bus',emergency_vehicle:'Urg.'};
@@ -934,12 +953,66 @@
       document.getElementById('decisionTimeline').innerHTML=decisionHistory.map(r=>`<div class="t-row"><span class="t-time">${r.time}</span><span class="t-phase ${r.phase}">${r.phase}</span><span class="t-scores">NS=${r.ns} / EW=${r.ew}</span><span class="t-dur">${r.dur}s</span></div>`).join('');
     }
 
+    function resetSceneUi(sceneId){
+      activeSceneId=sceneId||activeSceneId;
+      sourceVideoAttached=false;
+      lastAnalysisVersion=-1;
+      lastAnonTotal=0;
+      lastDecisionPhase=null;
+      analysisLog.length=0;
+      decisionHistory.length=0;
+      nsData.fill(0);
+      ewData.fill(0);
+      scoreChart.update('none');
+      const v=document.getElementById('sourceVideo');
+      if(v){v.pause();v.removeAttribute('src');v.load();}
+      document.getElementById('sourceClock').textContent='00:00 / 00:00';
+      document.getElementById('sourceStatus').textContent='Changement de scène';
+      document.getElementById('reviewStatus').textContent='Changement de scène...';
+      document.getElementById('lastAnalysisChip').textContent='—';
+      document.getElementById('decisionCount').textContent='0 décisions';
+      document.getElementById('decisionTimeline').innerHTML='<div class="log-row">Aucune décision pour le moment.</div>';
+      document.getElementById('analysisLog').innerHTML='<div class="log-row">Aucune analyse pour le moment.</div>';
+      document.getElementById('analysisImage').src=`/analysis_frame.jpg?t=${Date.now()}`;
+    }
+
+    async function loadScenes(){
+      const select=document.getElementById('sceneSelect');
+      if(!select)return;
+      try{
+        const r=await fetch('/api/scenes');
+        const data=await r.json();
+        const scenes=data.scenes||{};
+        const ids=Object.keys(scenes);
+        select.innerHTML=ids.map(id=>`<option value="${id}">${scenes[id].label||id}</option>`).join('');
+        select.value=data.current||ids[0]||'';
+        activeSceneId=select.value||activeSceneId;
+      }catch(e){
+        select.innerHTML='<option value="">Scènes indisponibles</option>';
+      }
+    }
+
+    async function changeScene(sceneId){
+      if(!sceneId)return;
+      const select=document.getElementById('sceneSelect');
+      select.disabled=true;
+      resetSceneUi(sceneId);
+      try{
+        const r=await fetch('/api/scene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scene:sceneId})});
+        if(!r.ok)throw new Error('scene switch failed');
+      }catch(e){
+        document.getElementById('reviewStatus').textContent='Changement de scène impossible';
+      }finally{
+        setTimeout(()=>{select.disabled=false;},900);
+      }
+    }
+
     function attachVideo(){
       if(sourceVideoAttached)return;
       const v=document.getElementById('sourceVideo');
       v.src=`/source_video?t=${Date.now()}`;
-      v.addEventListener('loadedmetadata',()=>{document.getElementById('sourceClock').textContent=`${fmt(v.currentTime)} / ${fmt(v.duration||0)}`;document.getElementById('sourceStatus').textContent='Source prête';});
-      v.addEventListener('timeupdate',()=>{document.getElementById('sourceClock').textContent=`${fmt(v.currentTime)} / ${fmt(v.duration||0)}`;});
+      v.onloadedmetadata=()=>{document.getElementById('sourceClock').textContent=`${fmt(v.currentTime)} / ${fmt(v.duration||0)}`;document.getElementById('sourceStatus').textContent='Source prête';};
+      v.ontimeupdate=()=>{document.getElementById('sourceClock').textContent=`${fmt(v.currentTime)} / ${fmt(v.duration||0)}`;};
       sourceVideoAttached=true;
     }
 
@@ -951,13 +1024,19 @@
       try{
         const r=await fetch('/api/state');const s=await r.json();
         const a=(s.analysis&&Object.keys(s.analysis).length)?s.analysis:s;
-        const d=a.decision||{};const video=s.video||{};const model=s.model_info||{};
+        const d=a.decision||{};const video=s.video||{};const model=s.model_info||{};const status=s.analysis_status||'idle';
+        const sceneId=s.current_scene||model.scene||model.profile||'';
+        if(sceneId&&sceneId!==activeSceneId){
+          const select=document.getElementById('sceneSelect');
+          if(select&&select.value!==sceneId)select.value=sceneId;
+          resetSceneUi(sceneId);
+        }
 
         document.getElementById('systemStatus').textContent=video.source_ready?'Opérationnel':'En attente';
         document.getElementById('piDot').className='dot '+(video.source_ready?'ok':'warn');
         document.getElementById('modeChip').textContent=video.playback_mode||'review';
         document.getElementById('profileChip').textContent=model.profile||'—';
-        document.getElementById('analysisState').textContent=s.analysis_status||'idle';
+        document.getElementById('analysisState').textContent=status;
 
         const fps=Number(s.fps||0);
         document.getElementById('sourceFps').textContent=fps.toFixed(1);
@@ -1010,10 +1089,12 @@
         if(Number(s.analysis_frame_version||0)!==lastAnalysisVersion){
           lastAnalysisVersion=Number(s.analysis_frame_version||0);
           document.getElementById('analysisImage').src=`/analysis_frame.jpg?t=${Date.now()}`;
-          const stamp=new Date().toLocaleTimeString();
-          document.getElementById('reviewStatus').textContent=`Analyse disponible — frame ${a.frame_id||0}`;
-          document.getElementById('lastAnalysisChip').textContent=stamp;
-          addLog({time:stamp,text:`Frame ${a.frame_id||0}, phase ${d.phase||'—'}, ${a.detections_total||0} objets, ${pFrame(a)} anonymisés`});
+          if(status==='ready'){
+            const stamp=new Date().toLocaleTimeString();
+            document.getElementById('reviewStatus').textContent=`Analyse disponible — frame ${a.frame_id||0}`;
+            document.getElementById('lastAnalysisChip').textContent=stamp;
+            addLog({time:stamp,text:`Frame ${a.frame_id||0}, phase ${d.phase||'—'}, ${a.detections_total||0} objets, ${pFrame(a)} anonymisés`});
+          }
         }
 
         document.getElementById('zones').innerHTML=['N','E','S','W'].map(z=>{
@@ -1031,6 +1112,7 @@
       }catch(e){}
     }
 
+    loadScenes();
     setInterval(tick,500);tick();
   </script>
 </body>

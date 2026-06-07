@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from flask import Flask, Response, abort, jsonify, request, send_file
 
-from pipeline.config import DASHBOARD_HOST, DASHBOARD_PORT
+from pipeline.config import DASHBOARD_HOST, DASHBOARD_PORT, DEFAULT_SCENE, SCENE_PROFILES
 
 
 class Dashboard:
@@ -35,6 +35,11 @@ class Dashboard:
         self.analysis_snapshot_pending = True
         self.source_video_path = None
         self.seek_request = None
+        self.scene_request = None
+        self.scenes = self._public_scenes()
+        self.current_scene_id = (
+            DEFAULT_SCENE if DEFAULT_SCENE in self.scenes else next(iter(self.scenes), None)
+        )
         self.state = {
             "zones": {},
             "polygons": {},
@@ -54,6 +59,8 @@ class Dashboard:
             "anonymized_total": 0,
             "model_info": {},
             "video": {"fps": 0.0, "total_frames": 0, "current_second": 0.0, "source_ready": False},
+            "scenes": deepcopy(self.scenes),
+            "current_scene": self.current_scene_id,
             "analysis_frame_version": 0,
             "analysis_frame_id": 0,
             "analysis_status": "idle",
@@ -61,6 +68,22 @@ class Dashboard:
             "timestamp": time.time(),
         }
         self._setup_routes()
+
+    @staticmethod
+    def _public_scenes():
+        """Expose une version JSON-safe des scenes disponibles."""
+        scenes = {}
+        for scene_id, scene in SCENE_PROFILES.items():
+            zones_json = scene.get("zones_json")
+            scenes[scene_id] = {
+                "id": scene_id,
+                "label": scene.get("label", scene_id),
+                "profile": scene.get("profile", scene_id),
+                "video": Path(str(scene.get("video", ""))).name,
+                "zones_json": Path(str(zones_json)).name if zones_json else None,
+                "frame_index": scene.get("frame_index", 0),
+            }
+        return scenes
 
     def _setup_routes(self):
         @self.app.get("/")
@@ -107,6 +130,45 @@ class Dashboard:
             with self.lock:
                 data = deepcopy(self.state)
             return jsonify(data)
+
+        @self.app.get("/api/scenes")
+        def api_scenes():
+            with self.lock:
+                data = {
+                    "current": self.current_scene_id,
+                    "scenes": deepcopy(self.scenes),
+                }
+            return jsonify(data)
+
+        @self.app.post("/api/profile")
+        @self.app.post("/api/scene")
+        def api_scene():
+            payload = request.get_json(silent=True) or {}
+            scene_id = payload.get("scene") or payload.get("profile")
+            if scene_id not in self.scenes:
+                abort(400)
+            with self.lock:
+                self.scene_request = {
+                    "scene": scene_id,
+                    "timestamp": time.time(),
+                }
+                self.current_scene_id = scene_id
+                self.source_video_path = None
+                self.analysis_snapshot_pending = True
+                self.analysis_state = None
+                self.analysis_frame_bytes = self._placeholder_frame()
+                self.analysis_frame_version += 1
+                self.analysis_frame_id = 0
+                self.state["current_scene"] = scene_id
+                self.state["scenes"] = deepcopy(self.scenes)
+                self.state["analysis_status"] = "switching"
+                self.state["analysis"] = {}
+                self.state["analysis_frame_version"] = self.analysis_frame_version
+                self.state["analysis_frame_id"] = 0
+                video_state = deepcopy(self.state.get("video", {}))
+                video_state["source_ready"] = False
+                self.state["video"] = video_state
+            return jsonify({"ok": True, "scene": scene_id})
 
         @self.app.post("/api/analyze")
         @self.app.post("/api/seek")
@@ -793,7 +855,7 @@ class Dashboard:
   <header class="topbar">
     <div class="brand">
       <strong>Smart Traffic Agadir</strong>
-      <span>PFE M2 IA embarquee - supervision intersection</span>
+      <span>Supervision intersection</span>
     </div>
     <div class="statusbar">
       <span class="chip"><span id="piDot" class="dot warn"></span><span id="systemStatus">Initialisation</span></span>
@@ -1264,6 +1326,8 @@ class Dashboard:
             "anonymized_total": anonymized_total,
             "model_info": state.get("model_info", {}),
             "video": video_data,
+            "scenes": deepcopy(self.scenes),
+            "current_scene": self.current_scene_id,
             "timestamp": time.time(),
         }
         with self.lock:
@@ -1294,6 +1358,8 @@ class Dashboard:
             video_state.update(video_meta or {})
             video_state["source_ready"] = bool(self.source_video_path)
             self.state["video"] = video_state
+            self.state["scenes"] = deepcopy(self.scenes)
+            self.state["current_scene"] = self.current_scene_id
             if model_info is not None:
                 self.state["model_info"] = deepcopy(model_info)
             self.state["timestamp"] = time.time()
@@ -1310,6 +1376,8 @@ class Dashboard:
             video_state = deepcopy(self.state.get("video", {}))
             video_state["source_ready"] = True
             self.state["video"] = video_state
+            self.state["scenes"] = deepcopy(self.scenes)
+            self.state["current_scene"] = self.current_scene_id
 
     def pop_seek_request(self):
         """Retourne puis efface la demande de seek envoyee par le dashboard."""
@@ -1317,6 +1385,22 @@ class Dashboard:
             request_data = self.seek_request
             self.seek_request = None
         return request_data
+
+    def pop_scene_request(self):
+        """Retourne puis efface la demande de changement de scene."""
+        with self.lock:
+            request_data = self.scene_request
+            self.scene_request = None
+        return request_data
+
+    def set_current_scene(self, scene_id):
+        """Publie la scene active dans l'etat JSON du dashboard."""
+        if scene_id not in self.scenes:
+            return
+        with self.lock:
+            self.current_scene_id = scene_id
+            self.state["current_scene"] = scene_id
+            self.state["scenes"] = deepcopy(self.scenes)
 
     def needs_analysis_snapshot(self):
         """Indique si le pipeline doit recalculer l'image d'analyse fixe."""

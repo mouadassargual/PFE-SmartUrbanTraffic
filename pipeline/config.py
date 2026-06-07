@@ -14,6 +14,7 @@ BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS_DIR  = os.path.join(BASE_DIR, "models")
 DATA_DIR    = os.path.join(BASE_DIR, "data")
 VIDEOS_DIR  = os.path.join(DATA_DIR, "videos")
+ZONES_DIR   = os.path.join(DATA_DIR, "zones")
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -83,7 +84,7 @@ PHASES = {
 }
 
 # ═══════════════════════════════════════════════════════
-# ZONES POLYGONALES — PROFIL NE8TH (BELLEVUE)
+# ZONES POLYGONALES — PROFILS BELLEVUE
 # ═══════════════════════════════════════════════════════
 ZONE_PROFILES = {
     'ne8th' : {
@@ -106,10 +107,59 @@ ZONE_PROFILES = {
         'W': np.array([[400,250],[503,681],[12,707],
                        [7,414],[396,250]], np.int32),
     },
+    '150th' : {
+        'N': np.array([[437,174],[699,72],[791,65],
+                       [881,69],[960,80],[1006,98],
+                       [868,134],[848,182],[909,232]], np.int32),
+        'E': np.array([[915,239],[1276,351],[1268,620],
+                       [768,596]], np.int32),
+        'S': np.array([[367,197],[148,400],[57,309],
+                       [26,206],[35,157],[77,133]], np.int32),
+        'W': np.array([[132,501],[588,689],[258,693],
+                       [51,690]], np.int32),
+    },
 }
 
 # Zone active par défaut
 DEFAULT_PROFILE = 'ne8th'
+
+# Scènes prêtes pour le dashboard: profil + vidéo source + calibration zones.
+SCENE_PROFILES = {
+    'ne8th': {
+        'label': 'Bellevue NE 8th',
+        'profile': 'ne8th',
+        'video': os.path.join(
+            VIDEOS_DIR,
+            'ne8th',
+            'Bellevue_Bellevue_NE8th__2017-09-11_14-08-31_3min.mp4',
+        ),
+        'zones_json': os.path.join(ZONES_DIR, 'ne8th_custom_zones.json'),
+        'frame_index': 100,
+    },
+    '116th': {
+        'label': 'Bellevue 116th NE 12th',
+        'profile': '116th',
+        'video': os.path.join(
+            VIDEOS_DIR,
+            '116th',
+            'Bellevue_116th_NE12th__2017-09-10_20-09-12_demo.mp4',
+        ),
+        'zones_json': os.path.join(ZONES_DIR, '116th_custom_zones.json'),
+        'frame_index': 100,
+    },
+    '150th': {
+        'label': 'Bellevue 150th SE 38th',
+        'profile': '150th',
+        'video': os.path.join(
+            VIDEOS_DIR,
+            '150th',
+            'Bellevue_150th_SE38th__2017-09-11_09-08-31_3min.mp4',
+        ),
+        'zones_json': os.path.join(ZONES_DIR, '150th_custom_zones.json'),
+        'frame_index': 100,
+    },
+}
+DEFAULT_SCENE = 'ne8th'
 
 # ═══════════════════════════════════════════════════════
 # ROIs PIÉTONS — DÉTECTION HAUTE RÉSOLUTION OPTIONNELLE
@@ -128,6 +178,11 @@ PERSON_ROI_PROFILES = {
         ('left_sidewalk',   (0.00, 0.25, 0.45, 0.95)),
         ('center_crossing', (0.28, 0.18, 0.76, 0.90)),
         ('right_sidewalk',  (0.55, 0.15, 1.00, 0.88)),
+    ],
+    '150th': [
+        ('upper_approach',  (0.28, 0.06, 0.82, 0.38)),
+        ('center_crossing', (0.10, 0.18, 0.95, 0.86)),
+        ('lower_approach',  (0.02, 0.56, 0.55, 0.98)),
     ],
 }
 PERSON_ROI_ENABLED_DEFAULT = False

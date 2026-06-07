@@ -24,10 +24,12 @@ from pipeline.config import (
     CONF_THRESH,
     DASHBOARD_PORT,
     DEFAULT_PROFILE,
+    DEFAULT_SCENE,
     IMG_SIZE,
     PERSON_ROI_EVERY,
     PERSON_ROI_PROFILES,
     RESULTS_DIR,
+    SCENE_PROFILES,
     VEHICLE_WEIGHTS,
     YOLO_MODEL,
     ZONE_PROFILES,
@@ -38,7 +40,7 @@ from pipeline.detector import YOLODetector
 from pipeline.tracker import IoUTracker, ZoneTracker
 
 
-HEADER_TEXT = "SMART TRAFFIC AGADIR - PFE M2 IA Embarquee - FSA Ait Melloul"
+HEADER_TEXT = "SMART TRAFFIC AGADIR"
 ANALYSIS_ZONE_COLORS = {
     "N": (255, 180, 40),
     "E": (60, 220, 255),
@@ -218,6 +220,11 @@ class SmartTrafficPipeline:
 
     def __init__(self, args):
         self.args = args
+        self.active_scene_id = args.scene or (
+            args.profile if args.profile in SCENE_PROFILES else DEFAULT_SCENE
+        )
+        if args.scene or (args.video is None and args.camera is None):
+            self._apply_scene_args(args, self.active_scene_id)
         self.profile = args.profile
         self.zones = load_zone_polygons(args.zones_json) if args.zones_json else ZONE_PROFILES[self.profile]
         self.person_rois = PERSON_ROI_PROFILES.get(self.profile, [])
@@ -257,6 +264,7 @@ class SmartTrafficPipeline:
         self.dashboard_enabled = bool(args.dashboard and not args.no_dash)
         if self.dashboard_enabled:
             self.dashboard = Dashboard(port=args.port)
+            self.dashboard.set_current_scene(self.active_scene_id)
             self.dashboard.start()
 
         self.source = self._resolve_source(args)
@@ -278,6 +286,7 @@ class SmartTrafficPipeline:
 
         print(f"\n  Source  : {self.source}")
         print(f"  FPS src : {self.src_fps:.1f}")
+        print(f"  Scene   : {self.active_scene_id}")
         print(f"  Profil  : {self.profile}")
         if args.zones_json:
             print(f"  Zones   : {args.zones_json}")
@@ -295,6 +304,15 @@ class SmartTrafficPipeline:
         print(f"  Stride  : {args.vid_stride} frame(s) source par inference")
         if args.save:
             print(f"  Output  : {args.save}")
+
+    @staticmethod
+    def _apply_scene_args(args, scene_id):
+        scene = SCENE_PROFILES.get(scene_id)
+        if not scene:
+            return
+        args.video = scene.get("video") or args.video
+        args.profile = scene.get("profile", scene_id)
+        args.zones_json = scene.get("zones_json") or args.zones_json
 
     @staticmethod
     def _resolve_source(args):
@@ -317,6 +335,8 @@ class SmartTrafficPipeline:
             "name": self.model_name,
             "imgsz": self.args.imgsz,
             "profile": self.profile,
+            "scene": self.active_scene_id,
+            "scene_label": SCENE_PROFILES.get(self.active_scene_id, {}).get("label", self.active_scene_id),
             "zones_json": self.args.zones_json,
         }
 
@@ -333,7 +353,87 @@ class SmartTrafficPipeline:
             "dropped_frames": self.dropped_frames,
             "vid_stride": self.args.vid_stride,
             "processed_frames": self.processed_frame_count,
+            "scene": self.active_scene_id,
         }
+
+    def _load_scene(self, scene_id):
+        scene = SCENE_PROFILES.get(scene_id)
+        if not scene:
+            print(f"  Scene inconnue: {scene_id}")
+            return False
+
+        source = scene.get("video")
+        if not source or not Path(source).exists():
+            print(f"  Scene {scene_id}: video introuvable -> {source}")
+            return False
+
+        profile = scene.get("profile", scene_id)
+        zones_json = scene.get("zones_json")
+        zones = (
+            load_zone_polygons(zones_json)
+            if zones_json and Path(zones_json).exists()
+            else ZONE_PROFILES[profile]
+        )
+
+        if getattr(self, "cap", None) is not None:
+            self.cap.release()
+
+        self.active_scene_id = scene_id
+        self.profile = profile
+        self.args.profile = profile
+        self.args.video = source
+        self.args.zones_json = zones_json
+        self.source = source
+        self.zones = zones
+        self.person_rois = PERSON_ROI_PROFILES.get(profile, [])
+        self.iou_tracker.reset()
+        self.zone_tracker = ZoneTracker(self.zones, VEHICLE_WEIGHTS)
+        self.mdp = MDPDecision()
+        self.decision_history = []
+        self.emergency_count = 0
+        self.frame_id = 0
+        self.processed_frame_count = 0
+        self.dropped_frames = 0
+        self.anonymizer.reset_counter()
+
+        self.cap = cv2.VideoCapture(self.source)
+        if not self.cap.isOpened():
+            raise RuntimeError(f"Impossible d'ouvrir la source: {self.source}")
+
+        self.src_fps = self.cap.get(cv2.CAP_PROP_FPS) or 30.0
+        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        self.playback_clock_start = time.perf_counter()
+
+        if self.dashboard is not None:
+            self.dashboard.set_current_scene(scene_id)
+            self.dashboard.set_source_video(self.source)
+            self.dashboard.update_video_metadata(
+                self._video_meta(current_second=0.0),
+                model_info=self._model_info(),
+            )
+
+        print(f"  Scene dashboard -> {scene_id} ({self.source})")
+        return True
+
+    def _handle_dashboard_scene_change(self):
+        if not (self.dashboard_enabled and self.dashboard is not None):
+            return False
+
+        request_data = self.dashboard.pop_scene_request()
+        if not request_data:
+            return False
+
+        scene_id = request_data.get("scene")
+        if not scene_id:
+            return False
+
+        if not self._load_scene(scene_id):
+            return False
+
+        target_pos = int(SCENE_PROFILES.get(scene_id, {}).get("frame_index", 0) or 0)
+        if self.total_frames > 0:
+            target_pos = min(target_pos, self.total_frames - 1)
+        return self.analyze_selected_frame(max(0, target_pos))
 
     def _seek_target_position(self, seek):
         target_frame = seek.get("frame")
@@ -551,6 +651,8 @@ class SmartTrafficPipeline:
         print("\n  Dashboard review demarre - lecteur source + analyse a la demande\n")
         try:
             while True:
+                if self._handle_dashboard_scene_change():
+                    continue
                 seek = self.dashboard.pop_seek_request() if self.dashboard is not None else None
                 if seek:
                     target_pos = self._seek_target_position(seek)
@@ -573,6 +675,9 @@ class SmartTrafficPipeline:
 
         try:
             while True:
+                if self._handle_dashboard_scene_change():
+                    fps_window.clear()
+                    continue
                 if self._handle_dashboard_seek():
                     fps_window.clear()
 
@@ -664,6 +769,7 @@ class SmartTrafficPipeline:
         self.results.append(
             {
                 "frame": self.frame_id,
+                "scene": self.active_scene_id,
                 "processed_frame": self.processed_frame_count,
                 "fps": round(float(fps), 2),
                 "effective_source_fps": round(float(fps) * max(1, int(self.args.vid_stride)), 2),
@@ -705,6 +811,7 @@ class SmartTrafficPipeline:
         zone_stats = self.zone_tracker.get_stats()
         report = {
             "total_frames": self.frame_id,
+            "scene": self.active_scene_id,
             "source_frames_covered": self.frame_id,
             "processed_frames": self.processed_frame_count,
             "vid_stride": int(self.args.vid_stride),
@@ -723,6 +830,8 @@ class SmartTrafficPipeline:
                 "name": self.model_name,
                 "imgsz": self.args.imgsz,
                 "conf": self.args.conf,
+                "profile": self.profile,
+                "scene": self.active_scene_id,
             },
             "timestamp": datetime.now().isoformat(timespec="seconds"),
             "total_tracks": tracker_stats["total_tracks"],
@@ -744,11 +853,12 @@ class SmartTrafficPipeline:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Smart Traffic Agadir - Pipeline IA embarquee")
+    parser = argparse.ArgumentParser(description="Smart Traffic Agadir - Pipeline")
     parser.add_argument("--model", type=str, default=YOLO_MODEL, help="Chemin ONNX")
     parser.add_argument("--video", type=str, default=None, help="Chemin video ou 0 webcam")
     parser.add_argument("--camera", type=int, default=None, help="Index webcam alternatif")
     parser.add_argument("--profile", choices=list(ZONE_PROFILES.keys()), default=DEFAULT_PROFILE)
+    parser.add_argument("--scene", choices=list(SCENE_PROFILES.keys()), default=None, help="Scene dashboard preconfiguree")
     parser.add_argument("--zones-json", type=str, default=None, help="Polygones zones N/E/S/W generes par scripts/design_zone_polygons.py")
     parser.add_argument("--conf", type=float, default=CONF_THRESH)
     parser.add_argument(
@@ -807,8 +917,8 @@ def parse_args():
     args = parser.parse_args()
     if args.no_display:
         args.show = False
-    if args.video is None and args.camera is None:
-        parser.error("fournir --video chemin|0 ou --camera index")
+    if args.video is None and args.camera is None and DEFAULT_SCENE not in SCENE_PROFILES:
+        parser.error("fournir --video chemin|0, --camera index ou une scene valide")
     if args.roi_every < 1:
         parser.error("--roi-every doit etre >= 1")
     if args.vid_stride < 1:
