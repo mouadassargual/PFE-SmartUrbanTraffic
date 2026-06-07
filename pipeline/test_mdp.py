@@ -25,17 +25,17 @@ scenarios = [
         "expected": "NS"
     },
     {
-        "name": "Nord prioritaire malgre somme EW",
+        "name": "Axe EW dominant malgre N eleve",
         "state": {
-            "N": {"count": 7, "score": 7.0},
+            "N": {"count": 8, "score": 8.0},
             "S": {"count": 0, "score": 0.0},
-            "E": {"count": 3, "score": 3.0},
-            "W": {"count": 5, "score": 5.0},
+            "E": {"count": 5, "score": 5.0},
+            "W": {"count": 6, "score": 6.0},
             "pedestrians": 0,
             "emergency": False,
             "emergency_zone": None,
         },
-        "expected": "NS"
+        "expected": "EW"
     },
     {
         "name": "Trafic equilibre",
