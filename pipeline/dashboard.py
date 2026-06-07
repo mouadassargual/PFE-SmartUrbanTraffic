@@ -95,6 +95,13 @@ class Dashboard:
                 headers={"Cache-Control": "no-store, max-age=0"},
             )
 
+        @self.app.get("/Logo.png")
+        def dashboard_logo():
+            path = Path(__file__).resolve().parents[1] / "Logo.png"
+            if not path.exists():
+                abort(404)
+            return send_file(path, mimetype="image/png", conditional=True)
+
         @self.app.get("/api/state")
         def api_state():
             with self.lock:
