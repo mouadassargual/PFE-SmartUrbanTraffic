@@ -541,6 +541,10 @@ class Dashboard:
 
     @staticmethod
     def _html():
+        template = Path(__file__).resolve().parents[1] / "Urbanflow Final Report Evaluation.html"
+        if template.exists():
+            return template.read_text(encoding="utf-8")
+
         return """
 <!doctype html>
 <html lang="fr">
