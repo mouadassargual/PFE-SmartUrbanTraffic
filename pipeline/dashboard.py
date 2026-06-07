@@ -50,6 +50,8 @@ class Dashboard:
             "frame_id": 0,
             "emergency": False,
             "anonymized": 0,
+            "anonymized_frame": 0,
+            "anonymized_total": 0,
             "model_info": {},
             "video": {"fps": 0.0, "total_frames": 0, "current_second": 0.0, "source_ready": False},
             "analysis_frame_version": 0,
@@ -476,7 +478,7 @@ class Dashboard:
     async function tick() {
       const r = await fetch('/api/state');
       const s = await r.json();
-      const a = s.analysis || s;
+      const a = (s.analysis && Object.keys(s.analysis).length) ? s.analysis : s;
       const d = a.decision || {};
       const phase = document.getElementById('phase');
       phase.textContent = d.phase || '--';
@@ -548,10 +550,10 @@ class Dashboard:
   <title>Smart Traffic Agadir</title>
   <style>
     :root {
-      --bg:#eef3f8; --surface:#ffffff; --surface2:#f8fafc; --ink:#17212b;
-      --muted:#64748b; --line:#d8e0ea; --brand:#0f4c81; --brand2:#12344d;
-      --green:#159947; --red:#cf2f2f; --amber:#e6a900; --blue:#2364aa;
-      --gold:#d8b96c; --shadow:0 8px 22px rgba(15, 32, 51, .09);
+      --bg:#f3f5f7; --surface:#ffffff; --surface2:#f6f8fa; --ink:#1d252d;
+      --muted:#637080; --line:#d5dde5; --brand:#184e63; --brand2:#0f2f3d;
+      --green:#12824a; --red:#bb3434; --amber:#b98000; --blue:#315f8f;
+      --teal:#1d7f85; --violet:#7857a8; --shadow:0 1px 2px rgba(16, 24, 32, .08);
     }
     * { box-sizing:border-box; }
     body {
@@ -559,9 +561,9 @@ class Dashboard:
       font-family:Inter, Arial, sans-serif; letter-spacing:0;
     }
     .topbar {
-      min-height:66px; display:flex; align-items:center; justify-content:space-between;
-      padding:13px 18px; background:linear-gradient(90deg,#10263a,#154764);
-      border-bottom:3px solid var(--gold); box-shadow:0 8px 24px rgba(16,38,58,.18);
+      min-height:62px; display:flex; align-items:center; justify-content:space-between;
+      padding:12px 18px; background:#13232d;
+      border-bottom:1px solid #263a46; box-shadow:0 2px 0 rgba(0,0,0,.08);
       position:sticky; top:0; z-index:10;
     }
     .brand { display:flex; flex-direction:column; gap:3px; }
@@ -574,7 +576,7 @@ class Dashboard:
       font-size:12px; white-space:nowrap;
     }
     .topbar .chip {
-      background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.24);
+      background:#1a313e; border-color:#31505e;
       color:#eef6fb;
     }
     .topbar .chip strong { color:#fff; }
@@ -586,21 +588,21 @@ class Dashboard:
       gap:14px; align-items:start;
     }
     .panel {
-      background:var(--surface); border:1px solid var(--line); border-radius:8px;
+      background:var(--surface); border:1px solid var(--line); border-radius:6px;
       box-shadow:var(--shadow); min-width:0; overflow:hidden;
     }
     .panel-head {
-      padding:12px 14px; border-bottom:1px solid var(--line);
-      background:linear-gradient(180deg,#ffffff,#f8fafc);
+      padding:11px 13px; border-bottom:1px solid var(--line);
+      background:#fbfcfd;
       display:flex; justify-content:space-between; align-items:center; gap:10px;
     }
     .panel-head h2 {
-      margin:0; font-size:15px; color:var(--brand2);
+      margin:0; font-size:14px; color:var(--brand2);
       display:flex; align-items:center; gap:8px;
     }
     .panel-head h2::before {
-      content:""; width:4px; height:18px; border-radius:999px;
-      background:var(--brand); display:inline-block;
+      content:""; width:9px; height:9px; border-radius:2px;
+      background:var(--teal); display:inline-block;
     }
     .panel-head span { color:var(--muted); font-size:12px; }
     .panel-body { padding:12px; }
@@ -609,8 +611,8 @@ class Dashboard:
       border-radius:6px;
     }
     .analysis-image-shell {
-      background:#071018; border:1px solid #12263a; border-radius:8px;
-      padding:8px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+      background:#101820; border:1px solid #1d303d; border-radius:6px;
+      padding:8px;
     }
     .image-toolbar {
       display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -626,11 +628,11 @@ class Dashboard:
       display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px;
     }
     .proof-step {
-      border:1px solid var(--line); border-radius:6px; background:var(--surface2);
-      border-top:3px solid var(--blue); padding:9px; min-width:0;
+      border:1px solid var(--line); border-radius:6px; background:#fff;
+      border-left:4px solid var(--blue); padding:9px; min-width:0;
     }
-    .proof-step:nth-child(2) { border-top-color:#475569; }
-    .proof-step:nth-child(3) { border-top-color:var(--green); }
+    .proof-step:nth-child(2) { border-left-color:#475569; }
+    .proof-step:nth-child(3) { border-left-color:var(--green); }
     .proof-step span {
       display:block; color:var(--muted); font-size:11px; text-transform:uppercase;
       font-weight:700;
@@ -641,7 +643,7 @@ class Dashboard:
     }
     .proof-step small { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
     .analysis-zones {
-      display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px;
+      display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:10px 0;
     }
     .analysis-zone-card {
       border:1px solid var(--line); border-radius:6px; background:#fff;
@@ -686,11 +688,10 @@ class Dashboard:
     }
     .review-meta { display:flex; flex-wrap:wrap; gap:12px; color:var(--muted); font-size:13px; }
     .btn {
-      border:1px solid var(--blue); background:var(--blue); color:#fff; border-radius:6px;
+      border:1px solid var(--brand); background:var(--brand); color:#fff; border-radius:5px;
       padding:9px 13px; font-weight:700; cursor:pointer; font-size:13px;
-      box-shadow:0 7px 14px rgba(35,100,170,.18);
     }
-    .btn:hover { background:#184f8c; }
+    .btn:hover { background:#103f52; }
     .btn:active { transform:translateY(1px); }
     details.advanced { margin-top:8px; border:1px solid var(--line); border-radius:6px; background:#fff; }
     details.advanced summary { cursor:pointer; padding:9px 10px; color:var(--muted); font-size:13px; }
@@ -702,14 +703,15 @@ class Dashboard:
     }
     .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
     .kpi {
-      background:var(--surface); border:1px solid var(--line); border-radius:8px;
-      border-left:4px solid var(--blue); padding:11px; box-shadow:var(--shadow); min-height:76px;
+      background:var(--surface); border:1px solid var(--line); border-radius:6px;
+      border-top:4px solid var(--blue); padding:10px 11px; box-shadow:var(--shadow); min-height:82px;
     }
-    .kpi:nth-child(4), .kpi:nth-child(6) { border-left-color:var(--green); }
-    .kpi:nth-child(7) { border-left-color:var(--red); }
-    .kpi:nth-child(8) { border-left-color:var(--amber); }
+    .kpi:nth-child(4), .kpi:nth-child(6) { border-top-color:var(--green); }
+    .kpi:nth-child(7) { border-top-color:var(--red); }
+    .kpi:nth-child(8) { border-top-color:var(--amber); }
     .kpi span { color:var(--muted); font-size:12px; }
     .kpi strong { display:block; margin-top:8px; font-size:24px; color:var(--brand2); }
+    .kpi small { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
     .ops {
       display:grid; grid-template-columns:minmax(440px, .9fr) minmax(440px, 1.1fr);
       gap:14px; align-items:start;
@@ -830,8 +832,9 @@ class Dashboard:
           <div class="analysis-proof">
             <div class="proof-step"><span>YOLO</span><strong id="proofDetections">0</strong><small>objets detectes</small></div>
             <div class="proof-step"><span>Tracking</span><strong id="proofTracks">0</strong><small>tracks actifs</small></div>
-            <div class="proof-step"><span>Anonymisation</span><strong id="proofAnon">0</strong><small>personnes protegees</small></div>
+            <div class="proof-step"><span>Anonymisation</span><strong id="proofAnon">0</strong><small id="proofAnonTotal">total protege: 0</small></div>
           </div>
+          <div id="analysisZones" class="analysis-zones"></div>
           <div class="analysis-image-shell">
             <div class="image-toolbar">
               <span>Vue IA</span>
@@ -847,7 +850,7 @@ class Dashboard:
       <div class="kpi"><span>FPS video source</span><strong id="sourceFps">0</strong></div>
       <div class="kpi"><span>Latence analyse</span><strong id="latency">--</strong></div>
       <div class="kpi"><span>Objets detectes</span><strong id="detections">0</strong></div>
-      <div class="kpi"><span>Personnes anonymisees</span><strong id="anon">0</strong></div>
+      <div class="kpi"><span>Personnes anonymisees / frame</span><strong id="anon">0</strong><small id="anonTotal">total protege: 0</small></div>
       <div class="kpi"><span>Tracks actifs</span><strong id="tracks">0</strong></div>
       <div class="kpi"><span>Pietons</span><strong id="pedestrians">0</strong></div>
       <div class="kpi"><span>Urgence</span><strong id="emergency">OK</strong></div>
@@ -1101,10 +1104,19 @@ class Dashboard:
       }
     }
 
+    function privacyFrameCount(analysis) {
+      return Number(analysis.anonymized_frame ?? analysis.anonymized ?? 0);
+    }
+
+    function privacyTotalCount(analysis) {
+      const frameCount = privacyFrameCount(analysis);
+      return Number(analysis.anonymized_total ?? frameCount);
+    }
+
     async function tick() {
       const r = await fetch('/api/state');
       const s = await r.json();
-      const a = s.analysis || s;
+      const a = (s.analysis && Object.keys(s.analysis).length) ? s.analysis : s;
       const d = a.decision || {};
       const video = s.video || {};
       const model = s.model_info || {};
@@ -1132,7 +1144,10 @@ class Dashboard:
       document.getElementById('latency').textContent = latencyMs ? `${latencyMs.toFixed(0)} ms` : '--';
       document.getElementById('detections').textContent = a.detections_total || 0;
       document.getElementById('tracks').textContent = a.active_tracks || 0;
-      document.getElementById('anon').textContent = a.anonymized || 0;
+      const anonymizedFrame = privacyFrameCount(a);
+      const anonymizedTotal = privacyTotalCount(a);
+      document.getElementById('anon').textContent = anonymizedFrame;
+      document.getElementById('anonTotal').textContent = `total protege: ${anonymizedTotal}`;
       document.getElementById('pedestrians').textContent = a.pedestrians || 0;
       document.getElementById('emergency').textContent = (a.emergency || d.phase === 'EMERGENCY') ? 'ALERTE' : 'OK';
       document.getElementById('frameKpi').textContent = a.frame_id || '--';
@@ -1147,7 +1162,8 @@ class Dashboard:
       updateCompatibility(d, a);
       document.getElementById('proofDetections').textContent = a.detections_total || 0;
       document.getElementById('proofTracks').textContent = a.active_tracks || 0;
-      document.getElementById('proofAnon').textContent = a.anonymized || 0;
+      document.getElementById('proofAnon').textContent = anonymizedFrame;
+      document.getElementById('proofAnonTotal').textContent = `total protege: ${anonymizedTotal}`;
 
       const zones = a.zones || {};
       const green = new Set(d.green_dirs || []);
@@ -1165,7 +1181,7 @@ class Dashboard:
         document.getElementById('lastAnalysisChip').textContent = stamp;
         updateLog({
           time: stamp,
-          text: `Frame ${a.frame_id || 0}, phase ${d.phase || '--'}, ${a.detections_total || 0} objets, ${a.anonymized || 0} anonymises`
+          text: `Frame ${a.frame_id || 0}, phase ${d.phase || '--'}, ${a.detections_total || 0} objets, ${anonymizedFrame} anonymises`
         });
       }
 
@@ -1212,6 +1228,9 @@ class Dashboard:
         video_data = deepcopy(video_data)
         video_data["source_ready"] = bool(self.source_video_path)
 
+        anonymized_frame = int(state.get("anonymized", 0))
+        anonymized_total = int(state.get("anonymized_total", anonymized_frame))
+
         next_state = {
             "zones": zones,
             "polygons": polygons,
@@ -1229,7 +1248,9 @@ class Dashboard:
             "fps": round(float(fps), 2),
             "frame_id": state.get("frame_id", 0),
             "emergency": bool(state.get("emergency", False)),
-            "anonymized": int(state.get("anonymized_total", state.get("anonymized", 0))),
+            "anonymized": anonymized_frame,
+            "anonymized_frame": anonymized_frame,
+            "anonymized_total": anonymized_total,
             "model_info": state.get("model_info", {}),
             "video": video_data,
             "timestamp": time.time(),

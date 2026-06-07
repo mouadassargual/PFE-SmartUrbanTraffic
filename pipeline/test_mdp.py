@@ -25,6 +25,19 @@ scenarios = [
         "expected": "NS"
     },
     {
+        "name": "Nord prioritaire malgre somme EW",
+        "state": {
+            "N": {"count": 7, "score": 7.0},
+            "S": {"count": 0, "score": 0.0},
+            "E": {"count": 3, "score": 3.0},
+            "W": {"count": 5, "score": 5.0},
+            "pedestrians": 0,
+            "emergency": False,
+            "emergency_zone": None,
+        },
+        "expected": "NS"
+    },
+    {
         "name": "Trafic equilibre",
         "state": {
             "N": {"count": 4, "score": 4.0},
@@ -79,7 +92,7 @@ scenarios = [
 ]
 
 print("=" * 50)
-print("TEST MDP — 5 scénarios")
+print(f"TEST MDP — {len(scenarios)} scénarios")
 print("=" * 50)
 
 all_passed = True
@@ -97,7 +110,7 @@ for s in scenarios:
 
 print("=" * 50)
 if all_passed:
-    print("✅ TOUS LES SCÉNARIOS VALIDÉS — 5/5")
+    print(f"✅ TOUS LES SCÉNARIOS VALIDÉS — {len(scenarios)}/{len(scenarios)}")
 else:
     print("❌ CERTAINS SCÉNARIOS ONT ÉCHOUÉ")
 print("=" * 50)

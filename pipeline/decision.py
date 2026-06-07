@@ -51,16 +51,25 @@ class MDPDecision:
             return self.durations["medium"]
         return self.durations["min"]
 
+    def _direction_scores(self, state):
+        """Scores individuels N/S/E/W utilises pour choisir la direction prioritaire."""
+        scores = {}
+        for direction in ("N", "S", "E", "W"):
+            zone = state.get(direction, {})
+            scores[direction] = float(zone.get("score", zone.get("count", 0)))
+        return scores
+
     def decide(self, state):
         """
         1. SI emergency: EMERGENCY 45s.
         2. SI pietons seuls + trafic faible: PEDESTRIAN 30s.
-        3. SINON: choisir NS/EW par score dominant.
-        4. SI aucun trafic: ALL_RED 15s.
+        3. SI aucun trafic: ALL_RED 15s.
+        4. SINON: choisir l'axe de la direction individuelle dominante.
         """
         self.decision_count += 1
         score_ns = self.compute_score(state, "NS")
         score_ew = self.compute_score(state, "EW")
+        direction_scores = self._direction_scores(state)
 
         # Règle 1 — Priorité absolue urgence
         if state.get("emergency", False):
@@ -73,6 +82,7 @@ class MDPDecision:
                 "timestamp": time.time(),
                 "green_dirs": ["N", "S", "E", "W"],
                 "red_dirs": [],
+                "direction_scores": direction_scores,
             }
             self.history.append(decision)
             return decision
@@ -95,12 +105,13 @@ class MDPDecision:
                 "timestamp": time.time(),
                 "green_dirs": ["PED"],
                 "red_dirs": ["N", "S", "E", "W"],
+                "direction_scores": direction_scores,
             }
             self.history.append(decision)
             return decision
 
         # Règle 3 — Aucun trafic détecté
-        if score_ns == 0 and score_ew == 0 and pedestrians == 0:
+        if max(direction_scores.values()) == 0 and pedestrians == 0:
             decision = {
                 "phase": "ALL_RED",
                 "duration": self.durations.get("all_red", 15),
@@ -110,33 +121,41 @@ class MDPDecision:
                 "timestamp": time.time(),
                 "green_dirs": [],
                 "red_dirs": ["N", "S", "E", "W"],
+                "direction_scores": direction_scores,
             }
             self.history.append(decision)
             return decision
 
-        # Règle 4 — Scoring NS vs EW
-        if score_ns >= score_ew:
+        # Règle 4 — Direction individuelle dominante puis phase compatible
+        dominant_dir = max(direction_scores, key=direction_scores.get)
+        dominant = direction_scores[dominant_dir]
+
+        if dominant_dir in ("N", "S"):
             phase = "NS"
-            dominant = score_ns
-            reason = "Axe Nord/Sud dominant"
+            duration_score = score_ns
+            reason = f"Direction {dominant_dir} dominante"
             green_dirs = ["N", "S"]
             red_dirs = ["E", "W"]
         else:
             phase = "EW"
-            dominant = score_ew
-            reason = "Axe Est/Ouest dominant"
+            duration_score = score_ew
+            reason = f"Direction {dominant_dir} dominante"
             green_dirs = ["E", "W"]
             red_dirs = ["N", "S"]
 
         decision = {
             "phase": phase,
-            "duration": self._duration_for_score(dominant),
+            "duration": self._duration_for_score(duration_score),
             "score_NS": score_ns,
             "score_EW": score_ew,
             "reason": reason,
             "timestamp": time.time(),
             "green_dirs": green_dirs,
             "red_dirs": red_dirs,
+            "dominant_dir": dominant_dir,
+            "dominant_score": dominant,
+            "duration_score": duration_score,
+            "direction_scores": direction_scores,
         }
         self.history.append(decision)
         return decision

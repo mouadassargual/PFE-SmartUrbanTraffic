@@ -93,6 +93,14 @@ def tracks_to_person_detections(tracks):
     ]
 
 
+def person_detections(detections):
+    return [
+        det
+        for det in detections
+        if det.get("class_name") == "person"
+    ]
+
+
 def count_detections_by_class(detections):
     counts = {}
     for det in detections:
@@ -450,9 +458,8 @@ class SmartTrafficPipeline:
                 source_prefix="vehicle_roi",
             )
 
+        frame, anonymized = self.anonymizer.anonymize(frame, person_detections(detections))
         tracks = self.iou_tracker.update(detections)
-        person_track_dets = tracks_to_person_detections(tracks)
-        frame, anonymized = self.anonymizer.anonymize(frame, person_track_dets)
 
         state = self.zone_tracker.update(tracks)
         state["frame_id"] = self.frame_id
