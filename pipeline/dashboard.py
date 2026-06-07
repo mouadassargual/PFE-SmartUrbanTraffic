@@ -836,7 +836,7 @@ class Dashboard:
 
       <article class="panel">
         <div class="panel-head">
-          <h2>Image IA anonymisee</h2>
+          <h2>Pipeline traite</h2>
           <span id="zonesSource">Detections + anonymisation</span>
         </div>
         <div class="panel-body">
